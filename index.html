@@ -468,6 +468,17 @@
       </div>
 
       <div class="workbench-grid">
+        <label>
+          Review Flow
+          <select id="reviewFlow">
+            <option>Generic</option>
+            <option>Mobile</option>
+            <option>Backend</option>
+            <option>Frontend</option>
+            <option>Integration</option>
+            <option>Full stack</option>
+          </select>
+        </label>
         <label class="wide-field">
           LLD / Flow Explanation
           <textarea id="lldInput" placeholder="Paste sanitized LLD, flow explanation, component design, timeout/config notes, CI/CD notes..."></textarea>
@@ -494,6 +505,14 @@
         <article class="pack-card">
           <h3>Claim vs Evidence</h3>
           <ul id="claimReviewOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Technical Explanation</h3>
+          <ul id="technicalExplanationOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Functional Explanation</h3>
+          <ul id="functionalExplanationOutput"></ul>
         </article>
         <article class="pack-card message-card">
           <h3>LLD Clarification Mail</h3>

@@ -71,12 +71,15 @@ const elements = {
   isgMailOutput: document.querySelector("#isgMailOutput"),
   generateLldBtn: document.querySelector("#generateLldBtn"),
   exportLldBtn: document.querySelector("#exportLldBtn"),
+  reviewFlow: document.querySelector("#reviewFlow"),
   lldInput: document.querySelector("#lldInput"),
   claimInput: document.querySelector("#claimInput"),
   lldCoverageOutput: document.querySelector("#lldCoverageOutput"),
   lldGapOutput: document.querySelector("#lldGapOutput"),
   configReviewOutput: document.querySelector("#configReviewOutput"),
   claimReviewOutput: document.querySelector("#claimReviewOutput"),
+  technicalExplanationOutput: document.querySelector("#technicalExplanationOutput"),
+  functionalExplanationOutput: document.querySelector("#functionalExplanationOutput"),
   lldMailOutput: document.querySelector("#lldMailOutput"),
   gateDecision: document.querySelector("#gateDecision"),
   riskScore: document.querySelector("#riskScore"),
@@ -1529,6 +1532,7 @@ function buildLldReview() {
   const fileNames = sources.map((source) => source.name.toLowerCase()).join("\n");
   const lld = elements.lldInput.value.toLowerCase();
   const claims = elements.claimInput.value.toLowerCase();
+  const reviewFlow = elements.reviewFlow.value;
   const pack = state.reviewPack || buildReviewPack(state.findings, sources);
   const apis = pack.apiReview || [];
 
@@ -1541,6 +1545,7 @@ function buildLldReview() {
     ["Data handling", /data|pii|customer|account|cache|storage|retention/.test(lld)],
     ["CI/CD and quality gates", /ci|cd|pipeline|pmd|sonar|quality|build|publish/.test(lld)],
     ["Deployment/rollback", /deploy|rollback|release|feature flag|config/.test(lld)],
+    ...profileCoverageChecks(reviewFlow, lld),
   ];
 
   const gaps = coverageChecks
@@ -1562,6 +1567,7 @@ function buildLldReview() {
     /pipeline|azure-pipelines|jenkins|github workflow|build|publish|ci|cd/.test(sourceText + lld + fileNames) ? "CI/CD is referenced; confirm branch, build, publish, approval, and artifact traceability." : "CI/CD evidence not found; request build/publish pipeline details.",
     /timeout|webclient|okhttp|retrofit|axios|fetch/.test(sourceText + lld) ? "Timeout/client configuration is referenced; confirm values, retry policy, and production config source." : "Timeout/client configuration not found; request service client timeout evidence.",
     /application\.ya?ml|application\.properties|config|env/.test(sourceText + lld + fileNames) ? "Application config is referenced; review endpoints, secrets, feature flags, and environment separation." : "Application config not evident; request environment config details.",
+    ...profileConfigReview(reviewFlow, sourceText, lld, fileNames),
   ];
 
   const claimReview = [
@@ -1570,7 +1576,11 @@ function buildLldReview() {
     /timeout|webclient|config/.test(claims) && "Timeout/config claimed; request actual config file path, values, environment override, and test evidence.",
     /pmd|checkstyle|standard/.test(claims) && "Code standardization claimed; request PMD/Checkstyle/Sonar report and failure threshold.",
     /credential|clone|access|repo/.test(claims) && "Repo/access process mentioned; request DevOps/ISG confirmation of approved access and audit trail.",
+    ...profileClaimReview(reviewFlow, claims),
   ].filter(Boolean);
+
+  const technicalExplanation = buildTechnicalExplanation(reviewFlow, pack, sourceText, lld);
+  const functionalExplanation = buildFunctionalExplanation(reviewFlow, pack, lld);
 
   const mail = [
     "Subject: LLD / Code Walkthrough Clarifications Required",
@@ -1588,6 +1598,12 @@ function buildLldReview() {
     "Claim vs Evidence:",
     ...bulletLines(claimReview.length ? claimReview : ["No specific developer claims captured. Please share evidence for all walkthrough statements."]),
     "",
+    "Technical Explanation Required:",
+    ...bulletLines(technicalExplanation),
+    "",
+    "Functional Explanation Required:",
+    ...bulletLines(functionalExplanation),
+    "",
     "Regards,",
   ].join("\n");
 
@@ -1597,6 +1613,8 @@ function buildLldReview() {
     gaps,
     configReview,
     claimReview,
+    technicalExplanation,
+    functionalExplanation,
     mail,
   };
 }
@@ -1607,6 +1625,8 @@ function renderLldCenter() {
   renderList(elements.lldGapOutput, review.gaps.length ? review.gaps : ["No major LLD gaps captured."]);
   renderList(elements.configReviewOutput, review.configReview);
   renderList(elements.claimReviewOutput, review.claimReview.length ? review.claimReview : ["No specific claims entered."]);
+  renderList(elements.technicalExplanationOutput, review.technicalExplanation);
+  renderList(elements.functionalExplanationOutput, review.functionalExplanation);
   elements.lldMailOutput.textContent = review.mail;
   elements.exportLldBtn.disabled = false;
 }
@@ -1622,6 +1642,141 @@ function exportLldReview() {
   anchor.download = `lld-evidence-review-${new Date().toISOString().slice(0, 10)}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function profileCoverageChecks(reviewFlow, lld) {
+  if (reviewFlow === "Mobile") {
+    return [
+      ["Mobile auth/session flow", /auth|login|session|token|otp|mfa|biometric/.test(lld)],
+      ["Mobile API connection config", /api connection|base url|endpoint|client|webclient|retrofit|axios|fetch/.test(lld)],
+      ["Mobile timeout configuration", /timeout|connect timeout|read timeout|webclient/.test(lld)],
+      ["Mobile secure storage", /keychain|keystore|secure storage|encrypted storage|asyncstorage/.test(lld)],
+      ["Mobile release and CI/CD evidence", /build|publish|pipeline|ci|cd|devops/.test(lld)],
+      ["Mobile code quality gate", /pmd|checkstyle|sonar|lint|quality/.test(lld)],
+    ];
+  }
+  if (reviewFlow === "Backend") {
+    return [
+      ["Backend controller/service/repository flow", /controller|service|repository|dao|database/.test(lld)],
+      ["Backend transaction and rollback behavior", /transaction|rollback|commit|idempotency/.test(lld)],
+      ["Backend observability", /log|monitor|alert|metric|trace|correlation/.test(lld)],
+    ];
+  }
+  if (reviewFlow === "Frontend") {
+    return [
+      ["Frontend screen/state flow", /screen|component|state|route|validation/.test(lld)],
+      ["Frontend API and error display behavior", /api|error|toast|message|fallback/.test(lld)],
+      ["Frontend access control expectation", /role|permission|auth|protected/.test(lld)],
+    ];
+  }
+  if (reviewFlow === "Integration") {
+    return [
+      ["Integration ownership and POC mapping", /owner|poc|team|dependency|system/.test(lld)],
+      ["Integration timeout/retry/idempotency", /timeout|retry|idempotency|duplicate/.test(lld)],
+      ["Integration reconciliation and support", /reconcile|support|monitor|alert|incident/.test(lld)],
+    ];
+  }
+  if (reviewFlow === "Full stack") {
+    return [
+      ["End-to-end UI to API to data flow", /ui|frontend|api|backend|database|mobile/.test(lld)],
+      ["Cross-application dependency mapping", /dependency|upstream|downstream|system|team/.test(lld)],
+      ["End-to-end test evidence", /e2e|sit|uat|integration test|smoke/.test(lld)],
+    ];
+  }
+  return [];
+}
+
+function profileConfigReview(reviewFlow, sourceText, lld, fileNames) {
+  const combined = `${sourceText}\n${lld}\n${fileNames}`;
+  if (reviewFlow !== "Mobile") return [];
+  return [
+    /auth|login|token|session/.test(combined)
+      ? "Mobile auth management is referenced; confirm token lifecycle, logout, refresh, secure storage, and session timeout evidence."
+      : "Mobile auth management not evident; request auth/session flow explanation.",
+    /pmd|checkstyle|sonar|lint/.test(combined)
+      ? "PMD/code-style/static checks are referenced; confirm report, gate threshold, and CI enforcement."
+      : "PMD/code-style evidence not found; request quality gate proof.",
+    /build|publish|pipeline|azure|jenkins|devops/.test(combined)
+      ? "Build/publish pipeline is referenced; confirm approved branch, artifact, environment, and release traceability."
+      : "Build/publish CI-CD evidence not found; request DevOps pipeline proof.",
+    /timeout|webclient|retrofit|okhttp|axios|fetch/.test(combined)
+      ? "Web client/API timeout is referenced; confirm actual timeout values and environment override."
+      : "Web client timeout config not evident; request timeout config and test evidence.",
+  ];
+}
+
+function profileClaimReview(reviewFlow, claims) {
+  if (reviewFlow !== "Mobile") return [];
+  return [
+    /working for me|my machine|sapient machine|local/.test(claims) &&
+      "Mobile validation cannot rely on individual/vendor machine; request approved device/environment, CI build, SIT/UAT evidence.",
+    /master credential|credential|clone|repo|access/.test(claims) &&
+      "Mobile repo access/cloning process must be approved; request DevOps/ISG confirmation and audit trail.",
+    /devops|build|publish|pipeline/.test(claims) &&
+      "Build/publish responsibility mentioned; request exact pipeline run and artifact evidence.",
+    /config|api connection|timeout|webclient/.test(claims) &&
+      "Config behavior mentioned; request config file path, values, masking, and environment-specific override proof.",
+  ].filter(Boolean);
+}
+
+function buildTechnicalExplanation(reviewFlow, pack, sourceText, lld) {
+  const common = [
+    "Explain entry point, components/classes/modules, and how request moves through the code.",
+    "Explain API calls, request/response mapping, timeout, retry, error handling, and fallback.",
+    "Explain configuration source, environment override, feature flags, and secret handling.",
+    "Explain evidence: CI/CD run, quality gate, unit/SIT/UAT result, and security scan status.",
+  ];
+  if (reviewFlow === "Mobile") {
+    return [
+      "Mobile technical flow: screen/action -> view model/state -> service/client -> API -> response -> UI state.",
+      "Auth management: token/session storage, refresh, logout, device binding, OTP/MFA/biometric behavior.",
+      "API connection config: base URL, headers, certificates/pinning, timeout values, retry/cancel behavior.",
+      "Build/publish: branch, pipeline, artifact, environment, signing, debug disabled, test code excluded.",
+      "Quality: PMD/Checkstyle/Sonar/lint report, rule set, gate threshold, and blocking behavior.",
+      ...common,
+    ];
+  }
+  if (reviewFlow === "Backend") {
+    return [
+      "Backend technical flow: controller -> service -> integration/repository -> response/error mapping.",
+      "Transaction behavior: commit, rollback, idempotency, duplicate handling, timeout-after-processing.",
+      ...common,
+    ];
+  }
+  if (reviewFlow === "Frontend") {
+    return [
+      "Frontend technical flow: route/screen -> component state -> API client -> error/loading/success UI.",
+      "Access control expectation: protected routes, role checks, server-side authorization dependency.",
+      ...common,
+    ];
+  }
+  return common;
+}
+
+function buildFunctionalExplanation(reviewFlow, pack, lld) {
+  const common = [
+    "Explain business trigger and user/system actor.",
+    "Explain happy path, negative path, timeout path, and rollback/retry behavior.",
+    "Explain impacted applications, teams, POCs, and pending dependencies.",
+    "Explain acceptance criteria, test evidence, open risks, and signoff needed.",
+  ];
+  if (reviewFlow === "Mobile") {
+    return [
+      "Mobile functional flow: user opens screen, enters data, validates input, submits, sees success/failure state.",
+      "Explain user-facing messages for invalid input, session expiry, API failure, timeout, and pending status.",
+      "Explain sensitive data shown on screen, masked fields, screenshots, clipboard, notifications, and logs.",
+      "Explain device/app states: background, resume, network loss, retry, app kill, upgrade, and logout.",
+      ...common,
+    ];
+  }
+  if (reviewFlow === "Integration") {
+    return [
+      "Integration functional flow: source system trigger, target system action, acknowledgement, failure handling.",
+      "Explain reconciliation, duplicate handling, SLA, support team, and escalation path.",
+      ...common,
+    ];
+  }
+  return common;
 }
 
 function currentSources() {
