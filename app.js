@@ -27,6 +27,7 @@ const elements = {
   abuseCasesList: document.querySelector("#abuseCasesList"),
   releaseGatesList: document.querySelector("#releaseGatesList"),
   apiInventoryList: document.querySelector("#apiInventoryList"),
+  applicationFlowList: document.querySelector("#applicationFlowList"),
   logAnalysisList: document.querySelector("#logAnalysisList"),
   vendorMessage: document.querySelector("#vendorMessage"),
   apiMessage: document.querySelector("#apiMessage"),
@@ -547,7 +548,8 @@ function runReview() {
   state.findings = sources.flatMap((file) => scanSource(file));
   const apiInventory = extractApiInventory(sources);
   state.findings.push(...logFindings);
-  state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings);
+  const applicationFlow = explainApplicationFlow(sources, apiInventory);
+  state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings, applicationFlow);
   renderSummary(sources.length);
   renderFindings();
   renderReviewPack();
@@ -699,6 +701,68 @@ function analyzeLogs(logText) {
     );
 }
 
+function explainApplicationFlow(sources, apiInventory = []) {
+  const classNames = new Set();
+  const methodNames = new Set();
+  const filesByType = {
+    mobile: [],
+    frontend: [],
+    backend: [],
+    config: [],
+    logs: [],
+    tests: [],
+  };
+
+  sources.forEach((source) => {
+    const name = (source.name || "").toLowerCase();
+    const content = source.content || "";
+    for (const match of content.matchAll(/\b(class|interface|enum)\s+([A-Za-z0-9_]+)/g)) {
+      classNames.add(match[2]);
+    }
+    for (const match of content.matchAll(/\b(public|private|protected|async|function)\s+[A-Za-z0-9_<>,\[\]\s]+\s+([A-Za-z0-9_]+)\s*\(/g)) {
+      methodNames.add(match[2]);
+    }
+
+    if (/android|ios|mobile|react-native|swift|kotlin/.test(name)) filesByType.mobile.push(source.name);
+    else if (/frontend|screen|component|page|tsx|jsx|html|css/.test(name)) filesByType.frontend.push(source.name);
+    else if (/api|service|controller|repository|backend|java|kt|ts|js/.test(name)) filesByType.backend.push(source.name);
+    else if (/\.(json|ya?ml|properties|gradle|xml|env)$/.test(name)) filesByType.config.push(source.name);
+    else if (/\.log$/.test(name)) filesByType.logs.push(source.name);
+    if (/(\.test\.|\.spec\.|__tests__|test\/|tests\/)/.test(name)) filesByType.tests.push(source.name);
+  });
+
+  const highRiskApis = apiInventory.filter((api) => api.risk !== "low");
+  return {
+    summary: [
+      `Files reviewed: ${sources.length}`,
+      `Classes/interfaces detected: ${classNames.size}`,
+      `Methods/functions detected: ${methodNames.size}`,
+      `APIs/endpoints detected: ${apiInventory.length}`,
+      `High/medium risk APIs: ${highRiskApis.length}`,
+    ],
+    likelyFlow: [
+      filesByType.mobile.length && "Mobile/UI layer collects user input and calls service/API layer.",
+      filesByType.frontend.length && "Frontend components/screens appear to handle user interaction and API calls.",
+      filesByType.backend.length && "Backend/service layer appears to process business logic, integration calls, and data operations.",
+      apiInventory.length && "API layer should be reviewed for authentication, authorization, validation, timeout, retry, and error mapping.",
+      filesByType.config.length && "Configuration files should be reviewed for environment values, secrets, endpoints, and security flags.",
+      filesByType.logs.length && "Logs should be reviewed for errors, correlation IDs, PII masking, and integration ownership.",
+      filesByType.tests.length ? "Automated tests are present and should be mapped to FS/security scenarios." : "No obvious test files detected; request unit/SIT/UAT evidence.",
+    ].filter(Boolean),
+    keyComponents: [...classNames].slice(0, 30),
+    keyMethods: [...methodNames].slice(0, 30),
+    filesByType,
+    reviewQuestions: [
+      "What is the entry point and trigger for this change?",
+      "Which APIs/systems are upstream and downstream?",
+      "Where is authentication and authorization enforced?",
+      "Where is customer/financial data stored, logged, cached, or transmitted?",
+      "What happens on timeout, retry, duplicate request, and partial failure?",
+      "Which team owns each API, log, defect, and deployment step?",
+    ],
+  };
+}
+
 function renderSummary(fileCount = state.files.length + (elements.codeInput.value.trim() ? 1 : 0)) {
   const counts = countBySeverity(state.findings);
   elements.criticalCount.textContent = counts.critical;
@@ -790,7 +854,7 @@ async function importScannerReport(event) {
   elements.reportInput.value = "";
 }
 
-function buildReviewPack(findings, sources, apiInventory = extractApiInventory(sources), logFindings = analyzeLogs(elements.logInput.value)) {
+function buildReviewPack(findings, sources, apiInventory = extractApiInventory(sources), logFindings = analyzeLogs(elements.logInput.value), applicationFlow = explainApplicationFlow(sources, apiInventory)) {
   const ids = new Set(findings.map((finding) => finding.id));
   const sourceText = sources.map((source) => source.content).join("\n").toLowerCase();
   const fileNames = sources.map((source) => source.name.toLowerCase()).join("\n");
@@ -949,6 +1013,7 @@ function buildReviewPack(findings, sources, apiInventory = extractApiInventory(s
       ],
     },
     communication: buildCommunicationPack(findings, apiInventory, logFindings, decision, riskScore, highRiskApis),
+    applicationFlow,
   };
 }
 
@@ -1020,6 +1085,11 @@ function renderReviewPack() {
       ? pack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)
       : ["No API endpoints detected. Import source or review API contracts manually."],
   );
+  renderList(elements.applicationFlowList, [
+    ...pack.applicationFlow.summary,
+    ...pack.applicationFlow.likelyFlow,
+    ...pack.applicationFlow.reviewQuestions.map((question) => `Review question: ${question}`),
+  ]);
   renderList(
     elements.logAnalysisList,
     pack.logAnalysis.findings.length
@@ -1447,6 +1517,7 @@ function currentSources() {
 function buildMarkdownReport(pack, findings) {
   const sections = [
     ["Reviewed APIs", pack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)],
+    ["Application Flow", [...pack.applicationFlow.summary, ...pack.applicationFlow.likelyFlow, ...pack.applicationFlow.reviewQuestions]],
     ["Log Analyzer", pack.logAnalysis.findings.length ? pack.logAnalysis.findings.map((finding) => `${finding.severity.toUpperCase()}: line ${finding.line} - ${finding.title}`) : pack.logAnalysis.requiredActions],
     ["Vendor Message", [pack.communication.vendorMessage]],
     ["API Team Message", [pack.communication.apiReviewMessage]],

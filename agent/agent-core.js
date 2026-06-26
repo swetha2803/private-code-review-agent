@@ -178,6 +178,68 @@ function extractApiInventory(files) {
   }));
 }
 
+function explainApplicationFlow(files, apiInventory = []) {
+  const classNames = new Set();
+  const methodNames = new Set();
+  const filesByType = {
+    mobile: [],
+    frontend: [],
+    backend: [],
+    config: [],
+    logs: [],
+    tests: [],
+  };
+
+  for (const file of files) {
+    const name = (file.relativePath || file.name || "").toLowerCase();
+    const content = file.content || "";
+    for (const match of content.matchAll(/\b(class|interface|enum)\s+([A-Za-z0-9_]+)/g)) {
+      classNames.add(match[2]);
+    }
+    for (const match of content.matchAll(/\b(public|private|protected|async|function)\s+[A-Za-z0-9_<>,\[\]\s]+\s+([A-Za-z0-9_]+)\s*\(/g)) {
+      methodNames.add(match[2]);
+    }
+
+    if (/android|ios|mobile|react-native|swift|kotlin/.test(name)) filesByType.mobile.push(file.relativePath || file.name);
+    else if (/frontend|screen|component|page|tsx|jsx|html|css/.test(name)) filesByType.frontend.push(file.relativePath || file.name);
+    else if (/api|service|controller|repository|backend|java|kt|ts|js/.test(name)) filesByType.backend.push(file.relativePath || file.name);
+    else if (/\.(json|ya?ml|properties|gradle|xml|env)$/.test(name)) filesByType.config.push(file.relativePath || file.name);
+    else if (/\.log$/.test(name)) filesByType.logs.push(file.relativePath || file.name);
+    if (/(\.test\.|\.spec\.|__tests__|test\/|tests\/)/.test(name)) filesByType.tests.push(file.relativePath || file.name);
+  }
+
+  const highRiskApis = apiInventory.filter((api) => api.risk !== "low");
+  return {
+    summary: [
+      `Files reviewed: ${files.length}`,
+      `Classes/interfaces detected: ${classNames.size}`,
+      `Methods/functions detected: ${methodNames.size}`,
+      `APIs/endpoints detected: ${apiInventory.length}`,
+      `High/medium risk APIs: ${highRiskApis.length}`,
+    ],
+    likelyFlow: [
+      filesByType.mobile.length && "Mobile/UI layer collects user input and calls service/API layer.",
+      filesByType.frontend.length && "Frontend components/screens appear to handle user interaction and API calls.",
+      filesByType.backend.length && "Backend/service layer appears to process business logic, integration calls, and data operations.",
+      apiInventory.length && "API layer should be reviewed for authentication, authorization, validation, timeout, retry, and error mapping.",
+      filesByType.config.length && "Configuration files should be reviewed for environment values, secrets, endpoints, and security flags.",
+      filesByType.logs.length && "Logs should be reviewed for errors, correlation IDs, PII masking, and integration ownership.",
+      filesByType.tests.length ? "Automated tests are present and should be mapped to FS/security scenarios." : "No obvious test files detected; request unit/SIT/UAT evidence.",
+    ].filter(Boolean),
+    keyComponents: [...classNames].slice(0, 30),
+    keyMethods: [...methodNames].slice(0, 30),
+    filesByType,
+    reviewQuestions: [
+      "What is the entry point and trigger for this change?",
+      "Which APIs/systems are upstream and downstream?",
+      "Where is authentication and authorization enforced?",
+      "Where is customer/financial data stored, logged, cached, or transmitted?",
+      "What happens on timeout, retry, duplicate request, and partial failure?",
+      "Which team owns each API, log, defect, and deployment step?",
+    ],
+  };
+}
+
 function analyzeLogs(text, file = "logs") {
   const findings = [];
   const lines = String(text || "").split(/\r?\n/);
@@ -266,7 +328,7 @@ function summarize(findings) {
   return { counts, riskScore, decision, total: findings.length };
 }
 
-function buildReviewPack(findings, inventory = {}, apiInventory = [], logFindings = []) {
+function buildReviewPack(findings, inventory = {}, apiInventory = [], logFindings = [], flow = null) {
   const { counts, riskScore, decision } = summarize(findings);
   const ids = new Set(findings.map((finding) => finding.id));
   const hasMobile = Boolean(inventory.android || inventory.ios || inventory.reactNative);
@@ -347,6 +409,14 @@ function buildReviewPack(findings, inventory = {}, apiInventory = [], logFinding
       ],
     },
     communication: buildCommunicationPack(findings, apiInventory, logFindings, decision, riskScore, highRiskApis),
+    applicationFlow: flow || {
+      summary: ["Flow analysis requires source files."],
+      likelyFlow: ["Upload/paste source or run the local agent to generate flow explanation."],
+      keyComponents: [],
+      keyMethods: [],
+      filesByType: {},
+      reviewQuestions: [],
+    },
   };
 }
 
@@ -450,6 +520,8 @@ function buildMarkdownReport(report) {
   }
 
   const sections = [
+    ["Application Flow", [...report.reviewPack.applicationFlow.summary, ...report.reviewPack.applicationFlow.likelyFlow]],
+    ["Flow Review Questions", report.reviewPack.applicationFlow.reviewQuestions],
     ["API Inventory", report.reviewPack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)],
     ["Log Analysis Actions", report.reviewPack.logAnalysis.requiredActions],
     ["Vendor Message", [report.reviewPack.communication.vendorMessage]],
@@ -532,6 +604,7 @@ module.exports = {
   buildInventory,
   analyzeLogs,
   extractApiInventory,
+  explainApplicationFlow,
   buildMarkdownReport,
   buildReviewPack,
   isReviewableFile,

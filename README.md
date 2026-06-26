@@ -37,6 +37,14 @@ npm run agent -- "C:\path\to\vendor\source"
 
 The agent recursively scans reviewable files, generates JSON and Markdown reports, creates evidence requests, produces security/unit/manual/abuse test packs, and exits with a non-zero code when critical or high findings exist.
 
+It can also scan a ZIP file locally:
+
+```powershell
+npm run agent -- "C:\path\to\vendor-source.zip"
+```
+
+ZIP contents are extracted to a local temporary folder, scanned locally, and removed after the report is generated.
+
 Integration lead features:
 
 - API inventory extracted from source patterns.
@@ -47,6 +55,7 @@ Integration lead features:
 - Offline browser workbench for FS review, tracker row generation, CR readiness, EA/ISG signoff checklist, status mail, issue fixing mail, and Gamma-ready deck outline.
 - EA template generator with architecture pattern, data flow, dependencies, API summary, NFRs, deployment, and rollback sections.
 - ISG pre-assessment with readiness score, missing evidence, open gaps, security exceptions, and submission mail.
+- Application flow explanation for uploaded/pasted/folder-scanned source.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 

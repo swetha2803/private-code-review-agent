@@ -47,3 +47,29 @@ Write-Host "Findings: $($report.findings.Count)"
 Write-Host "APIs: $($report.apiInventory.Count)"
 Write-Host "Log findings: $($report.logFindings.Count)"
 Write-Host "Report: $($json.FullName)"
+
+$zipPath = ".\sample-vendor.zip"
+if (Test-Path -LiteralPath $zipPath) {
+  Remove-Item -LiteralPath $zipPath -Force
+}
+
+Compress-Archive -Path ".\samples\vendor-mobile-backend\*" -DestinationPath $zipPath -Force
+npm run agent -- $zipPath ".\sample-zip-reports"
+$zipExitCode = $LASTEXITCODE
+
+if ($zipExitCode -ne 0 -and $zipExitCode -ne 2) {
+  exit $zipExitCode
+}
+
+$zipJson = Get-ChildItem ".\sample-zip-reports" -Filter "agent-review-*.json" |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1
+
+$zipReport = Get-Content $zipJson.FullName -Raw | ConvertFrom-Json
+
+if ($zipReport.findings.Count -lt 10 -or $zipReport.apiInventory.Count -lt 4) {
+  throw "ZIP review validation failed."
+}
+
+Write-Host "Sample ZIP review validation passed."
+Write-Host "ZIP report: $($zipJson.FullName)"
