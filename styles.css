@@ -88,6 +88,7 @@ label,
 .panel,
 .review-pack,
 .workbench,
+.signoff-center,
 .local-note {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -395,6 +396,11 @@ button:disabled {
   padding: 18px;
 }
 
+.signoff-center {
+  margin: 0 32px 20px;
+  padding: 18px;
+}
+
 .workbench-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -566,6 +572,7 @@ button:disabled {
 
   .review-pack,
   .workbench,
+  .signoff-center,
   .local-note {
     margin: 0 16px 20px;
   }

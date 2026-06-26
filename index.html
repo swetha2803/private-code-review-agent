@@ -321,6 +321,129 @@
       </div>
     </section>
 
+    <section class="signoff-center" aria-labelledby="signoffCenterTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="signoffCenterTitle">EA and ISG Signoff Center</h2>
+          <p>
+            Generate EA review templates and run ISG pre-assessment before
+            sending for formal approval.
+          </p>
+        </div>
+        <div class="result-actions">
+          <button id="generateSignoffBtn" type="button" class="primary-btn">
+            Generate Signoff Pack
+          </button>
+          <button id="exportSignoffBtn" type="button" class="ghost-btn" disabled>
+            Export Signoff Pack
+          </button>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <label>
+          Architecture Pattern
+          <select id="eaPattern">
+            <option>API integration</option>
+            <option>Mobile feature</option>
+            <option>Frontend change</option>
+            <option>Backend service</option>
+            <option>Batch / scheduler</option>
+            <option>Third-party integration</option>
+          </select>
+        </label>
+        <label>
+          Data Classification
+          <select id="dataClassification">
+            <option>Confidential</option>
+            <option>Internal</option>
+            <option>Restricted</option>
+            <option>Public</option>
+          </select>
+        </label>
+        <label>
+          Internet Facing
+          <select id="internetFacing">
+            <option>No</option>
+            <option>Yes</option>
+          </select>
+        </label>
+        <label>
+          PII / Financial Data
+          <select id="piiInvolved">
+            <option>Yes</option>
+            <option>No</option>
+          </select>
+        </label>
+        <label class="wide-field">
+          Data Flow
+          <textarea id="eaDataFlow" placeholder="Source -> middleware/API -> target systems -> response/notification/cache"></textarea>
+        </label>
+        <label class="wide-field">
+          Dependencies
+          <textarea id="eaDependencies" placeholder="Systems, APIs, queues, databases, teams, certificates, firewall, scheduler, third-party..."></textarea>
+        </label>
+        <label class="wide-field">
+          ISG Evidence Available
+          <textarea id="isgEvidence" placeholder="SAST, SCA, secret scan, API security, TLS/pinning, secure storage, log masking, VA/PT, risk acceptance..."></textarea>
+        </label>
+        <label class="wide-field">
+          Exceptions / Open Risks
+          <textarea id="securityExceptions" placeholder="Known exceptions, compensating controls, expiry date, approver, owner..."></textarea>
+        </label>
+      </div>
+
+      <div class="gate-strip">
+        <div>
+          <span id="isgDecision">Not assessed</span>
+          <small>ISG readiness</small>
+        </div>
+        <div>
+          <span id="isgScore">0</span>
+          <small>ISG score</small>
+        </div>
+        <div>
+          <span id="isgGapCount">0</span>
+          <small>Open gaps</small>
+        </div>
+        <div>
+          <span id="eaImpact">Pending</span>
+          <small>EA impact</small>
+        </div>
+      </div>
+
+      <div class="pack-grid">
+        <article class="pack-card message-card">
+          <h3>EA Template</h3>
+          <pre id="eaTemplateOutput"></pre>
+        </article>
+        <article class="pack-card">
+          <h3>EA Review Checklist</h3>
+          <ul id="eaChecklistOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>ISG Pre-Assessment</h3>
+          <ul id="isgAssessmentOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>ISG Gaps</h3>
+          <ul id="isgGapsOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Evidence Required</h3>
+          <ul id="isgEvidenceOutput"></ul>
+        </article>
+        <article class="pack-card message-card">
+          <h3>EA Signoff Mail</h3>
+          <pre id="eaMailOutput"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>ISG Submission Mail</h3>
+          <pre id="isgMailOutput"></pre>
+        </article>
+      </div>
+    </section>
+
     <section class="local-note" aria-label="Privacy model">
       <h2>Privacy Model</h2>
       <p>

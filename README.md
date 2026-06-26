@@ -45,6 +45,8 @@ Integration lead features:
 - Copy-ready vendor message, API team message, and log follow-up message.
 - Meeting agenda/status summary in generated reports.
 - Offline browser workbench for FS review, tracker row generation, CR readiness, EA/ISG signoff checklist, status mail, issue fixing mail, and Gamma-ready deck outline.
+- EA template generator with architecture pattern, data flow, dependencies, API summary, NFRs, deployment, and rollback sections.
+- ISG pre-assessment with readiness score, missing evidence, open gaps, security exceptions, and submission mail.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 

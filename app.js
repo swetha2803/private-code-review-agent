@@ -47,6 +47,27 @@ const elements = {
   statusMailOutput: document.querySelector("#statusMailOutput"),
   issueMailOutput: document.querySelector("#issueMailOutput"),
   gammaOutput: document.querySelector("#gammaOutput"),
+  generateSignoffBtn: document.querySelector("#generateSignoffBtn"),
+  exportSignoffBtn: document.querySelector("#exportSignoffBtn"),
+  eaPattern: document.querySelector("#eaPattern"),
+  dataClassification: document.querySelector("#dataClassification"),
+  internetFacing: document.querySelector("#internetFacing"),
+  piiInvolved: document.querySelector("#piiInvolved"),
+  eaDataFlow: document.querySelector("#eaDataFlow"),
+  eaDependencies: document.querySelector("#eaDependencies"),
+  isgEvidence: document.querySelector("#isgEvidence"),
+  securityExceptions: document.querySelector("#securityExceptions"),
+  isgDecision: document.querySelector("#isgDecision"),
+  isgScore: document.querySelector("#isgScore"),
+  isgGapCount: document.querySelector("#isgGapCount"),
+  eaImpact: document.querySelector("#eaImpact"),
+  eaTemplateOutput: document.querySelector("#eaTemplateOutput"),
+  eaChecklistOutput: document.querySelector("#eaChecklistOutput"),
+  isgAssessmentOutput: document.querySelector("#isgAssessmentOutput"),
+  isgGapsOutput: document.querySelector("#isgGapsOutput"),
+  isgEvidenceOutput: document.querySelector("#isgEvidenceOutput"),
+  eaMailOutput: document.querySelector("#eaMailOutput"),
+  isgMailOutput: document.querySelector("#isgMailOutput"),
   gateDecision: document.querySelector("#gateDecision"),
   riskScore: document.querySelector("#riskScore"),
   evidenceCount: document.querySelector("#evidenceCount"),
@@ -410,6 +431,8 @@ elements.downloadMarkdownBtn.addEventListener("click", downloadMarkdownReport);
 elements.reportInput.addEventListener("change", importScannerReport);
 elements.generateWorkbenchBtn.addEventListener("click", renderWorkbench);
 elements.exportWorkbenchBtn.addEventListener("click", exportWorkbench);
+elements.generateSignoffBtn.addEventListener("click", renderSignoffCenter);
+elements.exportSignoffBtn.addEventListener("click", exportSignoffPack);
 
 elements.filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -422,6 +445,7 @@ elements.filterButtons.forEach((button) => {
 
 renderReviewPack();
 renderWorkbench();
+renderSignoffCenter();
 
 async function loadFiles(files) {
   const readableFiles = files.filter((file) => {
@@ -480,6 +504,7 @@ function runReview() {
   renderFindings();
   renderReviewPack();
   renderWorkbench();
+  renderSignoffCenter();
 }
 
 function scanSource(file) {
@@ -713,6 +738,7 @@ async function importScannerReport(event) {
   renderFindings();
   renderReviewPack();
   renderWorkbench();
+  renderSignoffCenter();
   elements.reportInput.value = "";
 }
 
@@ -1183,6 +1209,188 @@ function exportWorkbench() {
   URL.revokeObjectURL(url);
 }
 
+function buildSignoffPack() {
+  const reviewPack = state.reviewPack || buildReviewPack(state.findings, currentSources());
+  const workbench = buildWorkbenchPack();
+  const appName = workbench.appName;
+  const devTitle = workbench.devTitle;
+  const pattern = elements.eaPattern.value;
+  const dataClassification = elements.dataClassification.value;
+  const internetFacing = elements.internetFacing.value;
+  const piiInvolved = elements.piiInvolved.value;
+  const dataFlow = elements.eaDataFlow.value.trim() || "Data flow pending.";
+  const dependencies = elements.eaDependencies.value.trim() || "Dependencies pending.";
+  const evidenceText = elements.isgEvidence.value.trim();
+  const exceptions = elements.securityExceptions.value.trim() || "No exceptions captured.";
+  const evidenceLower = evidenceText.toLowerCase();
+  const blockerCount = state.findings.filter((finding) => ["critical", "high"].includes(finding.severity)).length;
+
+  const evidenceChecks = [
+    ["SAST report", /sast|sonar|semgrep|checkmarx|fortify|codeql/.test(evidenceLower)],
+    ["SCA/dependency report", /sca|dependency|cve|snyk|dependency-check/.test(evidenceLower)],
+    ["Secret scan", /secret|gitleaks|credential/.test(evidenceLower)],
+    ["API security evidence", /api|auth|authorization|rate|replay|idempotency/.test(evidenceLower)],
+    ["TLS/certificate validation", /tls|ssl|certificate|pinning|mitm/.test(evidenceLower)],
+    ["Secure storage evidence", /secure storage|keychain|keystore|encrypted storage/.test(evidenceLower)],
+    ["Logging redaction evidence", /log|mask|redact|telemetry/.test(evidenceLower)],
+    ["Unit/SIT/UAT evidence", /unit|sit|uat|test evidence|coverage/.test(evidenceLower)],
+  ];
+
+  const gaps = evidenceChecks.filter(([, passed]) => !passed).map(([name]) => `${name} not captured.`);
+  if (blockerCount > 0) gaps.unshift(`${blockerCount} critical/high code or log finding(s) must be resolved or risk accepted.`);
+  if (internetFacing === "Yes") gaps.push("Internet-facing impact requires explicit threat model, WAF/rate-limit, and VA/PT evidence.");
+  if (piiInvolved === "Yes" && !/privacy|dpia|mask|retention|consent/i.test(evidenceText)) gaps.push("PII/financial data requires privacy, masking, retention, and logging evidence.");
+  if (exceptions !== "No exceptions captured." && !/approver|expiry|owner|compensating/i.test(exceptions)) gaps.push("Security exceptions require owner, approver, expiry, and compensating control.");
+
+  const score = Math.max(0, 100 - gaps.length * 10 - blockerCount * 15);
+  const decision = blockerCount > 0 || score < 60 ? "Not ready" : gaps.length ? "Ready with gaps" : "Ready";
+  const eaImpact = internetFacing === "Yes" || dataClassification === "Restricted" || piiInvolved === "Yes" ? "High" : "Medium";
+
+  const eaChecklist = [
+    "Architecture pattern and impacted systems are documented.",
+    "Data flow, trust boundaries, source/target systems, and integration ownership are clear.",
+    "API contracts, authentication, authorization, timeout, retry, and error handling are documented.",
+    "NFRs cover performance, availability, scalability, monitoring, and support.",
+    "Deployment, rollback, config, certificate/firewall, and operational dependencies are documented.",
+    "Security/privacy controls are mapped to data classification and platform.",
+  ];
+
+  const evidenceRequired = [
+    "SAST report with no unresolved critical/high findings.",
+    "SCA/dependency report with CVE and license status.",
+    "Secret scan report.",
+    "API security test evidence for authZ, replay, rate limit, idempotency, and input validation.",
+    "TLS/certificate validation or pinning evidence where applicable.",
+    "Secure storage and logging redaction evidence.",
+    "Unit/SIT/UAT evidence with build number and test date.",
+    "Risk acceptance document for every exception.",
+  ];
+
+  const eaTemplate = [
+    `EA Review Template - ${devTitle}`,
+    "",
+    `Application/Module: ${appName}`,
+    `Architecture Pattern: ${pattern}`,
+    `Platform: ${workbench.platform}`,
+    `Environment: ${workbench.environment}`,
+    `Data Classification: ${dataClassification}`,
+    `Internet Facing: ${internetFacing}`,
+    `PII/Financial Data: ${piiInvolved}`,
+    "",
+    "1. Business / Functional Scope",
+    workbench.fsSummary,
+    "",
+    "2. Architecture Overview",
+    `Pattern: ${pattern}`,
+    `Impact: ${eaImpact}`,
+    "",
+    "3. Data Flow",
+    dataFlow,
+    "",
+    "4. Dependencies",
+    dependencies,
+    "",
+    "5. API / Integration Summary",
+    ...(reviewPack.apiReview || []).slice(0, 20).map((api) => `- ${api.method} ${api.endpoint} (${api.risk}) - ${api.reviewFocus}`),
+    "",
+    "6. NFR / Operations",
+    "- Availability, performance, timeout, retry, monitoring, alerts, and support ownership to be confirmed.",
+    "",
+    "7. Security / Privacy",
+    `- ISG readiness: ${decision}`,
+    `- Open gaps: ${gaps.length}`,
+    `- Exceptions: ${exceptions}`,
+    "",
+    "8. Deployment / Rollback",
+    "- Deployment steps, feature flags/config, smoke test, rollback, and post-deployment validation to be attached.",
+  ].join("\n");
+
+  const eaMail = [
+    `Subject: EA Signoff Request - ${devTitle} - ${appName}`,
+    "",
+    "Hi EA Team,",
+    "",
+    "Please review the architecture/signoff details for the below change.",
+    "",
+    `Application/Module: ${appName}`,
+    `Change: ${devTitle}`,
+    `Pattern: ${pattern}`,
+    `Environment: ${workbench.environment}`,
+    `Architecture Impact: ${eaImpact}`,
+    "",
+    "Attached/Included:",
+    "- EA review template",
+    "- Data flow",
+    "- API/dependency summary",
+    "- NFR/operations notes",
+    "- Security/ISG readiness summary",
+    "",
+    "Regards,",
+  ].join("\n");
+
+  const isgMail = [
+    `Subject: ISG Pre-Assessment / Signoff Request - ${devTitle} - ${appName}`,
+    "",
+    "Hi ISG Team,",
+    "",
+    `We completed a pre-assessment before formal ISG submission. Current readiness: ${decision}, score: ${score}.`,
+    "",
+    "Open Gaps:",
+    ...bulletLines(gaps.length ? gaps : ["No open pre-assessment gaps captured."]),
+    "",
+    "Evidence Available:",
+    evidenceText || "Evidence details pending.",
+    "",
+    "Exceptions / Risk Acceptance:",
+    exceptions,
+    "",
+    "Regards,",
+  ].join("\n");
+
+  return {
+    generatedAt: new Date().toISOString(),
+    decision,
+    score,
+    gaps,
+    eaImpact,
+    evidenceChecks: evidenceChecks.map(([name, passed]) => ({ name, status: passed ? "Available" : "Missing" })),
+    evidenceRequired,
+    eaChecklist,
+    eaTemplate,
+    eaMail,
+    isgMail,
+  };
+}
+
+function renderSignoffCenter() {
+  const pack = buildSignoffPack();
+  elements.isgDecision.textContent = pack.decision;
+  elements.isgScore.textContent = pack.score;
+  elements.isgGapCount.textContent = pack.gaps.length;
+  elements.eaImpact.textContent = pack.eaImpact;
+  elements.eaTemplateOutput.textContent = pack.eaTemplate;
+  renderList(elements.eaChecklistOutput, pack.eaChecklist);
+  renderList(elements.isgAssessmentOutput, pack.evidenceChecks.map((item) => `${item.name}: ${item.status}`));
+  renderList(elements.isgGapsOutput, pack.gaps.length ? pack.gaps : ["No gaps captured in pre-assessment."]);
+  renderList(elements.isgEvidenceOutput, pack.evidenceRequired);
+  elements.eaMailOutput.textContent = pack.eaMail;
+  elements.isgMailOutput.textContent = pack.isgMail;
+  elements.exportSignoffBtn.disabled = false;
+}
+
+function exportSignoffPack() {
+  const pack = buildSignoffPack();
+  const blob = new Blob([JSON.stringify(pack, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `ea-isg-signoff-pack-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function currentSources() {
   const pasted = elements.codeInput.value.trim();
   return state.files.length ? state.files : pasted ? [{ name: "pasted-code", content: pasted }] : [];
@@ -1377,6 +1585,7 @@ function clearAll() {
   elements.findingsList.innerHTML = `<div class="empty-state">Upload a folder, upload files, or paste code to run a private review.</div>`;
   renderReviewPack();
   renderWorkbench();
+  renderSignoffCenter();
 }
 
 function countBySeverity(findings) {
