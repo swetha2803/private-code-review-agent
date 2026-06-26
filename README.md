@@ -56,6 +56,14 @@ Run the agent's own tests:
 npm test
 ```
 
+Run the included dummy sample review:
+
+```powershell
+.\tools\test-sample-review.ps1
+```
+
+The sample intentionally produces blocking findings, API inventory, log findings, and report sections so you can verify the tool end to end without using real banking code.
+
 Example:
 
 ```powershell

@@ -1,0 +1,4 @@
+2026-06-26T10:15:00Z INFO correlationId=abc-123 POST /api/login status=401 message="invalid otp"
+2026-06-26T10:16:00Z ERROR Authorization: Bearer abcdefghijklmnop
+2026-06-26T10:17:00Z ERROR accountNumber=123456789012 customerId=CIF123456 timeout calling /api/transfer/submit
+2026-06-26T10:18:00Z ERROR NullPointerException at com.vendor.TransferService.submit(TransferService.java:22)
