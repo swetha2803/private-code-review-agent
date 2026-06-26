@@ -403,7 +403,7 @@ const rules = [
     id: "mojibake-encoding",
     title: "Possible corrupted pasted characters or encoding issue",
     severity: "medium",
-    pattern: /[â�]/,
+    pattern: /[\u00e2\ufffd]/,
     description: "Corrupted characters can break compilation or make logs/reports unreadable.",
     fix: "Remove corrupted characters or save/compile with the correct UTF-8 encoding.",
   },
