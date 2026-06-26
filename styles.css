@@ -86,6 +86,7 @@ label,
 }
 
 .panel,
+.session-bar,
 .review-pack,
 .workbench,
 .signoff-center,
@@ -94,6 +95,20 @@ label,
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+.session-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 20px 32px 0;
+  padding: 18px;
+}
+
+.session-bar p {
+  margin-top: 4px;
+  font-size: 14px;
 }
 
 .panel {
@@ -552,6 +567,12 @@ button:disabled {
   .layout {
     grid-template-columns: 1fr;
     padding: 16px;
+  }
+
+  .session-bar {
+    align-items: stretch;
+    flex-direction: column;
+    margin: 16px 16px 0;
   }
 
   .panel {

@@ -5,8 +5,15 @@ const state = {
   reviewPack: null,
 };
 
+const localSessionKey = "private-code-review-agent.latestSession";
+
 const elements = {
   fileInput: document.querySelector("#fileInput"),
+  saveSessionBtn: document.querySelector("#saveSessionBtn"),
+  loadSessionBtn: document.querySelector("#loadSessionBtn"),
+  exportSessionBtn: document.querySelector("#exportSessionBtn"),
+  sessionInput: document.querySelector("#sessionInput"),
+  exportTrackerCsvBtn: document.querySelector("#exportTrackerCsvBtn"),
   dropzone: document.querySelector("#dropzone"),
   codeInput: document.querySelector("#codeInput"),
   logInput: document.querySelector("#logInput"),
@@ -465,6 +472,11 @@ if ("serviceWorker" in navigator) {
 elements.fileInput.addEventListener("change", async (event) => {
   await loadFiles(Array.from(event.target.files || []));
 });
+elements.saveSessionBtn.addEventListener("click", saveSessionLocal);
+elements.loadSessionBtn.addEventListener("click", loadSessionLocal);
+elements.exportSessionBtn.addEventListener("click", exportSessionFile);
+elements.sessionInput.addEventListener("change", importSessionFile);
+elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
 
 ["dragenter", "dragover"].forEach((eventName) => {
   elements.dropzone.addEventListener(eventName, (event) => {
@@ -1777,6 +1789,153 @@ function buildFunctionalExplanation(reviewFlow, pack, lld) {
     ];
   }
   return common;
+}
+
+function collectSessionData() {
+  return {
+    version: 1,
+    savedAt: new Date().toISOString(),
+    files: state.files,
+    findings: state.findings,
+    filter: state.filter,
+    reviewPack: state.reviewPack,
+    forms: {
+      codeInput: elements.codeInput.value,
+      logInput: elements.logInput.value,
+      languageHint: elements.languageHint.value,
+      wbAppName: elements.wbAppName.value,
+      wbDevTitle: elements.wbDevTitle.value,
+      wbEnvironment: elements.wbEnvironment.value,
+      wbPlatform: elements.wbPlatform.value,
+      wbPocs: elements.wbPocs.value,
+      wbFsSummary: elements.wbFsSummary.value,
+      wbIssues: elements.wbIssues.value,
+      eaPattern: elements.eaPattern.value,
+      dataClassification: elements.dataClassification.value,
+      internetFacing: elements.internetFacing.value,
+      piiInvolved: elements.piiInvolved.value,
+      eaDataFlow: elements.eaDataFlow.value,
+      eaDependencies: elements.eaDependencies.value,
+      isgEvidence: elements.isgEvidence.value,
+      securityExceptions: elements.securityExceptions.value,
+      reviewFlow: elements.reviewFlow.value,
+      lldInput: elements.lldInput.value,
+      claimInput: elements.claimInput.value,
+    },
+  };
+}
+
+function applySessionData(session) {
+  if (!session || !session.forms) return;
+  state.files = Array.isArray(session.files) ? session.files : [];
+  state.findings = Array.isArray(session.findings) ? session.findings : [];
+  state.filter = session.filter || "all";
+  state.reviewPack = session.reviewPack || null;
+
+  Object.entries(session.forms).forEach(([key, value]) => {
+    if (elements[key]) elements[key].value = value;
+  });
+
+  elements.filterButtons.forEach((item) => {
+    item.classList.toggle("active", item.dataset.filter === state.filter);
+  });
+  renderSummary();
+  renderFindings();
+  renderReviewPack();
+  renderWorkbench();
+  renderSignoffCenter();
+  renderLldCenter();
+}
+
+function saveSessionLocal() {
+  localStorage.setItem(localSessionKey, JSON.stringify(collectSessionData()));
+  elements.privacyStatus.textContent = "Saved locally";
+}
+
+function loadSessionLocal() {
+  const raw = localStorage.getItem(localSessionKey);
+  if (!raw) {
+    elements.privacyStatus.textContent = "No local session";
+    return;
+  }
+  applySessionData(JSON.parse(raw));
+  elements.privacyStatus.textContent = "Session loaded";
+}
+
+function exportSessionFile() {
+  downloadJson(collectSessionData(), `review-session-${new Date().toISOString().slice(0, 10)}.json`);
+}
+
+async function importSessionFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    applySessionData(JSON.parse(await file.text()));
+    elements.privacyStatus.textContent = "Session imported";
+  } catch {
+    elements.privacyStatus.textContent = "Import failed";
+  } finally {
+    elements.sessionInput.value = "";
+  }
+}
+
+function exportTrackerCsv() {
+  const workbench = buildWorkbenchPack();
+  const pack = state.reviewPack || buildReviewPack(state.findings, currentSources());
+  const rows = [
+    [
+      "Date",
+      "Application",
+      "Development",
+      "Platform",
+      "Environment",
+      "Decision",
+      "Risk Score",
+      "Findings",
+      "APIs",
+      "Log Findings",
+      "Status",
+      "POCs",
+      "Open Issues",
+    ],
+    [
+      new Date().toISOString().slice(0, 10),
+      workbench.appName,
+      workbench.devTitle,
+      workbench.platform,
+      workbench.environment,
+      pack.decision || "Not reviewed",
+      pack.riskScore || 0,
+      state.findings.length,
+      (pack.apiReview || []).length,
+      (pack.logAnalysis && pack.logAnalysis.totalFindings) || 0,
+      state.findings.some((finding) => ["critical", "high"].includes(finding.severity))
+        ? "Blocked"
+        : "In review",
+      workbench.pocs,
+      workbench.issues,
+    ],
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+  downloadText(csv, `tracker-row-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv");
+}
+
+function downloadJson(data, filename) {
+  downloadText(JSON.stringify(data, null, 2), filename, "application/json");
+}
+
+function downloadText(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  return `"${String(value ?? "").replaceAll('"', '""')}"`;
 }
 
 function currentSources() {

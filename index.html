@@ -24,6 +24,30 @@
       <div class="status-pill" id="privacyStatus">Offline-ready</div>
     </header>
 
+    <section class="session-bar" aria-label="Session manager">
+      <div>
+        <h2>Session Manager</h2>
+        <p>Save this development review locally, reload it later, or export tracker data.</p>
+      </div>
+      <div class="result-actions">
+        <button id="saveSessionBtn" type="button" class="ghost-btn">Save Local</button>
+        <button id="loadSessionBtn" type="button" class="ghost-btn">Load Latest</button>
+        <button id="exportSessionBtn" type="button" class="ghost-btn">Export Session</button>
+        <label class="import-report">
+          Import Session
+          <input
+            id="sessionInput"
+            type="file"
+            accept=".json"
+            aria-label="Import saved review session"
+          />
+        </label>
+        <button id="exportTrackerCsvBtn" type="button" class="ghost-btn">
+          Export Tracker CSV
+        </button>
+      </div>
+    </section>
+
     <main class="layout">
       <section class="panel input-panel" aria-labelledby="inputTitle">
         <div class="section-head">
