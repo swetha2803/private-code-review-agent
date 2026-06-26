@@ -31,6 +31,22 @@ const elements = {
   vendorMessage: document.querySelector("#vendorMessage"),
   apiMessage: document.querySelector("#apiMessage"),
   logMessage: document.querySelector("#logMessage"),
+  generateWorkbenchBtn: document.querySelector("#generateWorkbenchBtn"),
+  exportWorkbenchBtn: document.querySelector("#exportWorkbenchBtn"),
+  wbAppName: document.querySelector("#wbAppName"),
+  wbDevTitle: document.querySelector("#wbDevTitle"),
+  wbEnvironment: document.querySelector("#wbEnvironment"),
+  wbPlatform: document.querySelector("#wbPlatform"),
+  wbPocs: document.querySelector("#wbPocs"),
+  wbFsSummary: document.querySelector("#wbFsSummary"),
+  wbIssues: document.querySelector("#wbIssues"),
+  trackerOutput: document.querySelector("#trackerOutput"),
+  fsReviewOutput: document.querySelector("#fsReviewOutput"),
+  crReadinessOutput: document.querySelector("#crReadinessOutput"),
+  signoffOutput: document.querySelector("#signoffOutput"),
+  statusMailOutput: document.querySelector("#statusMailOutput"),
+  issueMailOutput: document.querySelector("#issueMailOutput"),
+  gammaOutput: document.querySelector("#gammaOutput"),
   gateDecision: document.querySelector("#gateDecision"),
   riskScore: document.querySelector("#riskScore"),
   evidenceCount: document.querySelector("#evidenceCount"),
@@ -392,6 +408,8 @@ elements.downloadBtn.addEventListener("click", downloadReport);
 elements.downloadPackBtn.addEventListener("click", downloadReviewPack);
 elements.downloadMarkdownBtn.addEventListener("click", downloadMarkdownReport);
 elements.reportInput.addEventListener("change", importScannerReport);
+elements.generateWorkbenchBtn.addEventListener("click", renderWorkbench);
+elements.exportWorkbenchBtn.addEventListener("click", exportWorkbench);
 
 elements.filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -403,6 +421,7 @@ elements.filterButtons.forEach((button) => {
 });
 
 renderReviewPack();
+renderWorkbench();
 
 async function loadFiles(files) {
   const readableFiles = files.filter((file) => {
@@ -460,6 +479,7 @@ function runReview() {
   renderSummary(sources.length);
   renderFindings();
   renderReviewPack();
+  renderWorkbench();
 }
 
 function scanSource(file) {
@@ -692,6 +712,7 @@ async function importScannerReport(event) {
   renderSummary(1);
   renderFindings();
   renderReviewPack();
+  renderWorkbench();
   elements.reportInput.value = "";
 }
 
@@ -977,6 +998,196 @@ function downloadMarkdownReport() {
   URL.revokeObjectURL(url);
 }
 
+function buildWorkbenchPack() {
+  const pack = state.reviewPack || buildReviewPack(state.findings, currentSources());
+  const appName = elements.wbAppName.value.trim() || "Application / Module";
+  const devTitle = elements.wbDevTitle.value.trim() || "Development / CR Title";
+  const environment = elements.wbEnvironment.value;
+  const platform = elements.wbPlatform.value;
+  const pocs = elements.wbPocs.value.trim() || "POC details pending";
+  const fsSummary = elements.wbFsSummary.value.trim() || "FS summary pending";
+  const issues = elements.wbIssues.value.trim() || "No open issues captured";
+  const today = new Date().toISOString().slice(0, 10);
+  const blockers = state.findings.filter((finding) => ["critical", "high"].includes(finding.severity));
+  const decision = pack.decision || "Not reviewed";
+
+  const trackerRow = [
+    today,
+    appName,
+    devTitle,
+    platform,
+    environment,
+    decision,
+    pack.riskScore || 0,
+    state.findings.length,
+    (pack.apiReview || []).length,
+    (pack.logAnalysis && pack.logAnalysis.totalFindings) || 0,
+    blockers.length ? "Blocked / action required" : "On track / evidence pending",
+    pocs.replace(/\r?\n/g, " | "),
+  ].join("\t");
+
+  const fsReview = [
+    "Scope matches FS and no hidden out-of-scope behavior is present.",
+    "API contracts, request/response fields, validation, errors, and retry behavior are documented.",
+    "Frontend/mobile screens match FS, including empty/error/loading/session-expired states.",
+    "Backend authorization is server-side and not only controlled by UI visibility.",
+    "Audit, notification, reconciliation, and rollback behavior are defined where money movement exists.",
+    "Non-functional requirements cover performance, availability, logging, monitoring, and support ownership.",
+    "Security/privacy requirements cover masking, storage, telemetry, permissions, and data retention.",
+  ];
+
+  const crReadiness = [
+    "CR description includes business reason, scope, impacted applications, and rollback plan.",
+    "Implementation, unit test, SIT/UAT, security review, and deployment evidence are attached.",
+    "All dependent teams and POCs are listed with approval status.",
+    "Open defects, known issues, risk acceptance, and workaround notes are documented.",
+    "Deployment steps, config changes, feature flags, and smoke test steps are documented.",
+    "Backout plan, monitoring plan, and post-deployment validation owner are documented.",
+  ];
+
+  const signoff = [
+    "EA signoff: architecture impact, integration pattern, data flow, and NFR impact reviewed.",
+    "ISG signoff: SAST/SCA/secret scan, security exceptions, and remediation evidence reviewed.",
+    "Business signoff: FS scope, UAT evidence, and open issue acceptance reviewed.",
+    "Operations signoff: monitoring, alerts, support SOP, and escalation matrix reviewed.",
+    "Release signoff: CR, deployment plan, rollback plan, and implementation window reviewed.",
+  ];
+
+  const statusMail = [
+    `Subject: Status Update - ${devTitle} - ${appName} - ${environment}`,
+    "",
+    "Hi Team,",
+    "",
+    `Please find the current status for ${devTitle}.`,
+    "",
+    `Application/Module: ${appName}`,
+    `Platform: ${platform}`,
+    `Environment: ${environment}`,
+    `Review Decision: ${decision}`,
+    `Risk Score: ${pack.riskScore || 0}`,
+    `Findings: ${state.findings.length}`,
+    `APIs Reviewed/Identified: ${(pack.apiReview || []).length}`,
+    `Log Findings: ${(pack.logAnalysis && pack.logAnalysis.totalFindings) || 0}`,
+    "",
+    "Current Issues/Risks:",
+    issues,
+    "",
+    "Required Actions:",
+    ...bulletLines((pack.releaseGates || []).slice(0, 6)),
+    "",
+    "POCs / Dependencies:",
+    pocs,
+    "",
+    "Regards,",
+  ].join("\n");
+
+  const issueMail = [
+    `Subject: Action Required - Issue Fixing Required - ${devTitle}`,
+    "",
+    "Hi Team,",
+    "",
+    "During review/testing, the below issue(s) require action before closure:",
+    "",
+    issues,
+    "",
+    blockers.length ? "Blocking Findings:" : "Review Notes:",
+    ...bulletLines(
+      blockers.length
+        ? blockers.slice(0, 8).map((finding) => `${finding.severity.toUpperCase()} - ${finding.file}:${finding.line} - ${finding.title}`)
+        : ["Please share fix commit, RCA, test proof, owner, and ETA if any issue is confirmed."],
+    ),
+    "",
+    "Expected Response:",
+    "- RCA",
+    "- Fix commit/build version",
+    "- Test evidence",
+    "- Owner and ETA",
+    "- Confirmation of impacted applications",
+    "",
+    "Regards,",
+  ].join("\n");
+
+  const gammaOutline = [
+    `Title: ${devTitle} - Integration Review Summary`,
+    "",
+    "Slide 1: Executive Summary",
+    `- Application: ${appName}`,
+    `- Environment: ${environment}`,
+    `- Decision: ${decision}`,
+    `- Risk Score: ${pack.riskScore || 0}`,
+    "",
+    "Slide 2: Scope and FS Summary",
+    `- ${fsSummary}`,
+    "",
+    "Slide 3: API Review",
+    ...bulletLines((pack.apiReview || []).slice(0, 10).map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk`)),
+    "",
+    "Slide 4: Security and Code Review Findings",
+    ...bulletLines(state.findings.slice(0, 10).map((finding) => `${finding.severity.toUpperCase()} - ${finding.title}`)),
+    "",
+    "Slide 5: Log Analysis",
+    ...bulletLines(
+      pack.logAnalysis && pack.logAnalysis.findings.length
+        ? pack.logAnalysis.findings.slice(0, 8).map((finding) => `${finding.severity.toUpperCase()} - ${finding.title}`)
+        : ["No log findings captured. Sanitized logs required if issue analysis is needed."],
+    ),
+    "",
+    "Slide 6: Open Issues and Risks",
+    `- ${issues.replace(/\r?\n/g, "\n- ")}`,
+    "",
+    "Slide 7: Signoffs and Next Steps",
+    ...bulletLines(signoff),
+  ].join("\n");
+
+  return {
+    generatedAt: new Date().toISOString(),
+    appName,
+    devTitle,
+    environment,
+    platform,
+    pocs,
+    fsSummary,
+    issues,
+    trackerRow,
+    fsReview,
+    crReadiness,
+    signoff,
+    statusMail,
+    issueMail,
+    gammaOutline,
+  };
+}
+
+function renderWorkbench() {
+  const workbench = buildWorkbenchPack();
+  elements.trackerOutput.textContent = workbench.trackerRow;
+  renderList(elements.fsReviewOutput, workbench.fsReview);
+  renderList(elements.crReadinessOutput, workbench.crReadiness);
+  renderList(elements.signoffOutput, workbench.signoff);
+  elements.statusMailOutput.textContent = workbench.statusMail;
+  elements.issueMailOutput.textContent = workbench.issueMail;
+  elements.gammaOutput.textContent = workbench.gammaOutline;
+  elements.exportWorkbenchBtn.disabled = false;
+}
+
+function exportWorkbench() {
+  const workbench = buildWorkbenchPack();
+  const blob = new Blob([JSON.stringify(workbench, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `integration-work-pack-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function currentSources() {
+  const pasted = elements.codeInput.value.trim();
+  return state.files.length ? state.files : pasted ? [{ name: "pasted-code", content: pasted }] : [];
+}
+
 function buildMarkdownReport(pack, findings) {
   const sections = [
     ["Reviewed APIs", pack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)],
@@ -1165,6 +1376,7 @@ function clearAll() {
   renderSummary(0);
   elements.findingsList.innerHTML = `<div class="empty-state">Upload a folder, upload files, or paste code to run a private review.</div>`;
   renderReviewPack();
+  renderWorkbench();
 }
 
 function countBySeverity(findings) {

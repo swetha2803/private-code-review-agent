@@ -227,6 +227,100 @@
       </div>
     </section>
 
+    <section class="workbench" aria-labelledby="workbenchTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="workbenchTitle">Integration Lead Workbench</h2>
+          <p>
+            Offline workspace for FS review, tracker updates, CR readiness,
+            signoffs, POCs, and communication drafts.
+          </p>
+        </div>
+        <div class="result-actions">
+          <button id="generateWorkbenchBtn" type="button" class="primary-btn">
+            Generate Work Pack
+          </button>
+          <button id="exportWorkbenchBtn" type="button" class="ghost-btn" disabled>
+            Export Work Pack
+          </button>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <label>
+          Application / Module
+          <input id="wbAppName" type="text" placeholder="Mobile app, backend API, frontend portal..." />
+        </label>
+        <label>
+          Development / CR Title
+          <input id="wbDevTitle" type="text" placeholder="Short title for the change" />
+        </label>
+        <label>
+          Environment
+          <select id="wbEnvironment">
+            <option>DEV</option>
+            <option>SIT</option>
+            <option>UAT</option>
+            <option>Pre-Prod</option>
+            <option>Production</option>
+          </select>
+        </label>
+        <label>
+          Platform
+          <select id="wbPlatform">
+            <option>Mobile</option>
+            <option>Backend</option>
+            <option>Frontend</option>
+            <option>Full stack</option>
+            <option>Integration</option>
+          </select>
+        </label>
+        <label class="wide-field">
+          Applications / Teams / POCs
+          <textarea id="wbPocs" placeholder="Team - POC - email/contact - responsibility"></textarea>
+        </label>
+        <label class="wide-field">
+          FS / Requirement Summary
+          <textarea id="wbFsSummary" placeholder="Paste or summarize the functional specification and scope."></textarea>
+        </label>
+        <label class="wide-field">
+          Open Issues / Risks
+          <textarea id="wbIssues" placeholder="Issue - owner - impact - ETA - current status"></textarea>
+        </label>
+      </div>
+
+      <div class="pack-grid">
+        <article class="pack-card">
+          <h3>Tracker Row</h3>
+          <pre id="trackerOutput"></pre>
+        </article>
+        <article class="pack-card">
+          <h3>FS Review</h3>
+          <ul id="fsReviewOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>CR Readiness</h3>
+          <ul id="crReadinessOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Signoff Checklist</h3>
+          <ul id="signoffOutput"></ul>
+        </article>
+        <article class="pack-card message-card">
+          <h3>Status Mail</h3>
+          <pre id="statusMailOutput"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>Issue Fixing Mail</h3>
+          <pre id="issueMailOutput"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>Gamma-Ready Deck Outline</h3>
+          <pre id="gammaOutput"></pre>
+        </article>
+      </div>
+    </section>
+
     <section class="local-note" aria-label="Privacy model">
       <h2>Privacy Model</h2>
       <p>

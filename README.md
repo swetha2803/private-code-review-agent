@@ -44,6 +44,7 @@ Integration lead features:
 - Sanitized log analyzer for secrets, PII, stack traces, auth failures, and timeout/integration instability.
 - Copy-ready vendor message, API team message, and log follow-up message.
 - Meeting agenda/status summary in generated reports.
+- Offline browser workbench for FS review, tracker row generation, CR readiness, EA/ISG signoff checklist, status mail, issue fixing mail, and Gamma-ready deck outline.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 
