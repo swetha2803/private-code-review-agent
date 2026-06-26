@@ -37,6 +37,16 @@ npm run agent -- "C:\path\to\vendor\source"
 
 The agent recursively scans reviewable files, generates JSON and Markdown reports, creates evidence requests, produces security/unit/manual/abuse test packs, and exits with a non-zero code when critical or high findings exist.
 
+Integration lead features:
+
+- API inventory extracted from source patterns.
+- Reviewed API report with risk focus for transfer, payment, beneficiary, login, OTP, profile, account, and statement APIs.
+- Sanitized log analyzer for secrets, PII, stack traces, auth failures, and timeout/integration instability.
+- Copy-ready vendor message, API team message, and log follow-up message.
+- Meeting agenda/status summary in generated reports.
+
+Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
+
 Run the agent's own tests:
 
 ```powershell

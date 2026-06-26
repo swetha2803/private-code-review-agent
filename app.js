@@ -9,6 +9,7 @@ const elements = {
   fileInput: document.querySelector("#fileInput"),
   dropzone: document.querySelector("#dropzone"),
   codeInput: document.querySelector("#codeInput"),
+  logInput: document.querySelector("#logInput"),
   languageHint: document.querySelector("#languageHint"),
   scanBtn: document.querySelector("#scanBtn"),
   clearBtn: document.querySelector("#clearBtn"),
@@ -25,6 +26,11 @@ const elements = {
   manualReviewList: document.querySelector("#manualReviewList"),
   abuseCasesList: document.querySelector("#abuseCasesList"),
   releaseGatesList: document.querySelector("#releaseGatesList"),
+  apiInventoryList: document.querySelector("#apiInventoryList"),
+  logAnalysisList: document.querySelector("#logAnalysisList"),
+  vendorMessage: document.querySelector("#vendorMessage"),
+  apiMessage: document.querySelector("#apiMessage"),
+  logMessage: document.querySelector("#logMessage"),
   gateDecision: document.querySelector("#gateDecision"),
   riskScore: document.querySelector("#riskScore"),
   evidenceCount: document.querySelector("#evidenceCount"),
@@ -436,7 +442,9 @@ function runReview() {
     });
   }
 
-  if (!sources.length) {
+  const logFindings = analyzeLogs(elements.logInput.value);
+
+  if (!sources.length && !logFindings.length && !elements.logInput.value.trim()) {
     state.findings = [];
     state.reviewPack = null;
     renderSummary();
@@ -446,7 +454,9 @@ function runReview() {
   }
 
   state.findings = sources.flatMap((file) => scanSource(file));
-  state.reviewPack = buildReviewPack(state.findings, sources);
+  const apiInventory = extractApiInventory(sources);
+  state.findings.push(...logFindings);
+  state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings);
   renderSummary(sources.length);
   renderFindings();
   renderReviewPack();
@@ -522,6 +532,78 @@ function reviewFileShape(file, lines) {
   }
 
   return findings;
+}
+
+function extractApiInventory(sources) {
+  const apiMap = new Map();
+
+  sources.forEach((source) => {
+    source.content.split(/\r?\n/).forEach((line, index) => {
+      const matches = [
+        ...line.matchAll(/\b(fetch|axios\.(get|post|put|patch|delete)|client\.(get|post|put|patch|delete))\s*\(\s*["'`]([^"'`]+)["'`]/gi),
+        ...line.matchAll(/\b(GET|POST|PUT|PATCH|DELETE)\s+([/][A-Za-z0-9_./:{}?-]+)/gi),
+        ...line.matchAll(/\b(url|endpoint|path)\s*[:=]\s*["'`]([^"'`]*\/[A-Za-z0-9_./:{}?-]+)["'`]/gi),
+      ];
+
+      matches.forEach((match) => {
+        const rawMethod = (match[2] || match[1] || "UNKNOWN").toUpperCase();
+        const method = ["GET", "POST", "PUT", "PATCH", "DELETE"].includes(rawMethod)
+          ? rawMethod
+          : inferMethod(line);
+        const endpoint = normalizeEndpoint(lastMatchGroup(match));
+        if (!endpoint || endpoint.length < 2) return;
+        const key = `${method} ${endpoint}`;
+        const existing = apiMap.get(key) || {
+          method,
+          endpoint,
+          files: new Set(),
+          firstLine: index + 1,
+          risk: classifyApiRisk(endpoint, line),
+          reviewed: "Needs review",
+        };
+        existing.files.add(source.name);
+        existing.risk = mergeRisk(existing.risk, classifyApiRisk(endpoint, line));
+        apiMap.set(key, existing);
+      });
+    });
+  });
+
+  return [...apiMap.values()].map((api) => ({
+    method: api.method,
+    endpoint: api.endpoint,
+    files: [...api.files],
+    firstLine: api.firstLine,
+    risk: api.risk,
+    reviewed: api.reviewed,
+    reviewFocus: apiReviewFocus(api.endpoint),
+  }));
+}
+
+function analyzeLogs(logText) {
+  const patterns = [
+    ["log-secret", "Secret or token may appear in logs", "critical", /(api[_-]?key|secret|token|password|authorization|bearer)\s*[:=]?\s*(bearer\s+)?[A-Za-z0-9_.:/+=-]{8,}/i, "Remove value from logs and rotate if real."],
+    ["log-pii", "PII or banking identifier may appear in logs", "high", /(accountNumber|customerId|cif|pan|iban|aadhaar|ssn|cardNumber|mobileNumber|email)\s*[:=]/i, "Mask PII and banking identifiers."],
+    ["log-stacktrace", "Stack trace or internal error exposed", "medium", /(Exception|StackTrace|NullPointerException|TypeError|ReferenceError|at\s+[A-Za-z0-9_.]+\()/, "Return generic errors and keep detailed traces server-side only."],
+    ["log-auth-failure", "Authentication failure pattern", "medium", /(401|403|invalid otp|otp failed|login failed|unauthorized|forbidden)/i, "Check lockout, alerting, and user-safe messages."],
+    ["log-timeout", "Timeout or integration instability", "medium", /(timeout|timed out|ECONNRESET|ENOTFOUND|503|504|gateway)/i, "Confirm retry, idempotency, and escalation ownership."],
+  ];
+
+  return String(logText || "")
+    .split(/\r?\n/)
+    .flatMap((line, index) =>
+      patterns
+        .filter(([, , , pattern]) => pattern.test(line))
+        .map(([id, title, severity, , fix]) => ({
+          id,
+          title,
+          severity,
+          description: title,
+          fix,
+          file: "pasted-logs",
+          line: index + 1,
+          snippet: line.trim().slice(0, 360),
+        })),
+    );
 }
 
 function renderSummary(fileCount = state.files.length + (elements.codeInput.value.trim() ? 1 : 0)) {
@@ -613,7 +695,7 @@ async function importScannerReport(event) {
   elements.reportInput.value = "";
 }
 
-function buildReviewPack(findings, sources) {
+function buildReviewPack(findings, sources, apiInventory = extractApiInventory(sources), logFindings = analyzeLogs(elements.logInput.value)) {
   const ids = new Set(findings.map((finding) => finding.id));
   const sourceText = sources.map((source) => source.content).join("\n").toLowerCase();
   const fileNames = sources.map((source) => source.name.toLowerCase()).join("\n");
@@ -629,6 +711,7 @@ function buildReviewPack(findings, sources) {
           : findings.length
             ? "Conditional"
             : "No blocking findings";
+  const highRiskApis = apiInventory.filter((api) => api.risk !== "low");
 
   return {
     generatedAt: new Date().toISOString(),
@@ -760,6 +843,66 @@ function buildReviewPack(findings, sources) {
       "Require manual review completion for auth, payment, beneficiary, profile, and statement flows.",
       "Require retest evidence after every vendor remediation commit.",
     ]),
+    apiReview: apiInventory,
+    logAnalysis: {
+      totalFindings: logFindings.length,
+      findings: logFindings,
+      requiredActions: [
+        "Confirm logs do not contain tokens, passwords, OTPs, PANs, account numbers, or customer identifiers.",
+        "Confirm correlation IDs exist for integration tracing without exposing sensitive data.",
+        "Confirm timeout/retry errors identify owning team, API, timestamp, environment, and request ID.",
+      ],
+    },
+    communication: buildCommunicationPack(findings, apiInventory, logFindings, decision, riskScore, highRiskApis),
+  };
+}
+
+function buildCommunicationPack(findings, apiInventory, logFindings, decision, riskScore, highRiskApis) {
+  const blockers = findings.filter((finding) => ["critical", "high"].includes(finding.severity));
+  const topIssues = blockers.slice(0, 6).map((finding) => `${finding.severity.toUpperCase()}: ${finding.file}:${finding.line} ${finding.title}`);
+  const apiLines = highRiskApis.slice(0, 8).map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk`);
+  const logLines = logFindings.slice(0, 6).map((finding) => `${finding.severity.toUpperCase()}: ${finding.file}:${finding.line} ${finding.title}`);
+
+  return {
+    vendorMessage: [
+      `Subject: ${decision === "Reject" || decision === "Hold" ? "Action Required" : "Review Update"}: Vendor code review findings and evidence request`,
+      "",
+      "Hi Team,",
+      "",
+      `We completed the local review pass. Current decision is ${decision} with risk score ${riskScore}.`,
+      blockers.length
+        ? "Please address the below blocking/security findings and share remediation evidence:"
+        : "No critical/high automated findings are currently open, but closure evidence is still required:",
+      ...bulletLines(topIssues.length ? topIssues : ["SAST, SCA, secret scan, unit test, and release build evidence required."]),
+      "",
+      "Please provide fix commits, test proof, owner, ETA, and retest notes for each item.",
+      "",
+      "Regards,",
+    ].join("\n"),
+    apiReviewMessage: [
+      "Subject: API review status and integration evidence required",
+      "",
+      "Hi Team,",
+      "",
+      `We identified ${apiInventory.length} API/endpoints from the submitted source. ${highRiskApis.length} need focused integration/security review.`,
+      ...bulletLines(apiLines.length ? apiLines : ["No high-risk API patterns detected by the local parser. Manual API contract review is still required."]),
+      "",
+      "Please share API contracts, auth scheme, request/response samples with masked data, timeout/retry behavior, error mapping, and owning team contacts.",
+      "",
+      "Regards,",
+    ].join("\n"),
+    logIssueMessage: [
+      "Subject: Log analysis findings and integration follow-up",
+      "",
+      "Hi Team,",
+      "",
+      `Log analysis found ${logFindings.length} item(s) requiring review.`,
+      ...bulletLines(logLines.length ? logLines : ["No log findings imported or detected. Please share sanitized logs with correlation IDs if analysis is needed."]),
+      "",
+      "Please confirm masking, correlation ID, timestamp, environment, API name, owning team, retry behavior, and closure action.",
+      "",
+      "Regards,",
+    ].join("\n"),
   };
 }
 
@@ -776,6 +919,21 @@ function renderReviewPack() {
   renderList(elements.manualReviewList, pack.manualReview);
   renderList(elements.abuseCasesList, pack.abuseCases);
   renderList(elements.releaseGatesList, pack.releaseGates);
+  renderList(
+    elements.apiInventoryList,
+    pack.apiReview.length
+      ? pack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)
+      : ["No API endpoints detected. Import source or review API contracts manually."],
+  );
+  renderList(
+    elements.logAnalysisList,
+    pack.logAnalysis.findings.length
+      ? pack.logAnalysis.findings.map((finding) => `${finding.severity.toUpperCase()}: line ${finding.line} - ${finding.title}. ${finding.fix}`)
+      : pack.logAnalysis.requiredActions,
+  );
+  elements.vendorMessage.textContent = pack.communication.vendorMessage;
+  elements.apiMessage.textContent = pack.communication.apiReviewMessage;
+  elements.logMessage.textContent = pack.communication.logIssueMessage;
   elements.gateDecision.textContent = pack.decision;
   elements.riskScore.textContent = pack.riskScore;
   elements.evidenceCount.textContent = pack.evidenceRequests.length;
@@ -821,6 +979,11 @@ function downloadMarkdownReport() {
 
 function buildMarkdownReport(pack, findings) {
   const sections = [
+    ["Reviewed APIs", pack.apiReview.map((api) => `${api.method} ${api.endpoint} - ${api.risk} risk - ${api.reviewFocus}`)],
+    ["Log Analyzer", pack.logAnalysis.findings.length ? pack.logAnalysis.findings.map((finding) => `${finding.severity.toUpperCase()}: line ${finding.line} - ${finding.title}`) : pack.logAnalysis.requiredActions],
+    ["Vendor Message", [pack.communication.vendorMessage]],
+    ["API Team Message", [pack.communication.apiReviewMessage]],
+    ["Log Issue Message", [pack.communication.logIssueMessage]],
     ["Security Testing", pack.securityTests],
     ["Unit Test Generation", pack.unitTests],
     ["ISG Testing", pack.isgTests],
@@ -996,6 +1159,7 @@ function clearAll() {
   state.reviewPack = null;
   elements.fileInput.value = "";
   elements.codeInput.value = "";
+  elements.logInput.value = "";
   elements.downloadBtn.disabled = true;
   elements.downloadPackBtn.disabled = true;
   renderSummary(0);
@@ -1036,6 +1200,54 @@ function hintToExtension(hint) {
 function findLine(lines, pattern) {
   const index = lines.findIndex((line) => pattern.test(line));
   return index >= 0 ? index + 1 : 1;
+}
+
+function inferMethod(line) {
+  const lowered = line.toLowerCase();
+  if (lowered.includes(".post") || lowered.includes("post")) return "POST";
+  if (lowered.includes(".put") || lowered.includes("put")) return "PUT";
+  if (lowered.includes(".patch") || lowered.includes("patch")) return "PATCH";
+  if (lowered.includes(".delete") || lowered.includes("delete")) return "DELETE";
+  return "GET";
+}
+
+function normalizeEndpoint(endpoint) {
+  return String(endpoint)
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/\?.*$/, "")
+    .trim();
+}
+
+function lastMatchGroup(match) {
+  for (let index = match.length - 1; index >= 1; index -= 1) {
+    if (match[index]) return match[index];
+  }
+  return "";
+}
+
+function classifyApiRisk(endpoint, line) {
+  const value = `${endpoint} ${line}`.toLowerCase();
+  if (/(transfer|payment|beneficiary|otp|mfa|login|password|pin|card|account|statement)/.test(value)) return "high";
+  if (/(profile|customer|user|session|token|auth|limit|balance)/.test(value)) return "medium";
+  return "low";
+}
+
+function mergeRisk(a, b) {
+  const order = { low: 1, medium: 2, high: 3 };
+  return order[b] > order[a] ? b : a;
+}
+
+function apiReviewFocus(endpoint) {
+  const value = endpoint.toLowerCase();
+  if (/(transfer|payment)/.test(value)) return "Authorization, idempotency, limit checks, confirmation, audit trail, and timeout-after-debit handling.";
+  if (/beneficiary/.test(value)) return "Cooling period, maker-checker where applicable, validation, fraud controls, and notification.";
+  if (/(otp|mfa|login|password|pin)/.test(value)) return "Brute-force control, replay prevention, session binding, error leakage, and lockout.";
+  if (/(account|statement|balance|profile|customer)/.test(value)) return "Customer authorization, PII masking, caching, and privacy logging.";
+  return "Contract validation, auth, error handling, timeout, retry, and owning team.";
+}
+
+function bulletLines(items) {
+  return items.map((item) => `- ${item}`);
 }
 
 function escapeHtml(value) {

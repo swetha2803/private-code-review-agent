@@ -6,6 +6,8 @@ const {
   buildInventory,
   buildMarkdownReport,
   buildReviewPack,
+  analyzeLogs,
+  extractApiInventory,
   isReviewableFile,
   scanText,
   shouldSkipDirectory,
@@ -20,6 +22,26 @@ test("detects critical secret and auth bypass patterns", () => {
   assert.equal(findings.some((finding) => finding.id === "hardcoded-secret"), true);
   assert.equal(findings.some((finding) => finding.id === "auth-bypass"), true);
   assert.equal(summarize(findings).decision, "Reject");
+});
+
+test("extracts API inventory and classifies banking endpoint risk", () => {
+  const apis = extractApiInventory([
+    {
+      relativePath: "src/api.ts",
+      content: "axios.post('/api/transfer/submit', payload)\nfetch('/api/profile')",
+    },
+  ]);
+  assert.equal(apis.length, 2);
+  assert.equal(apis.some((api) => api.endpoint === "/api/transfer/submit" && api.risk === "high"), true);
+  assert.equal(apis.some((api) => api.endpoint === "/api/profile" && api.risk === "medium"), true);
+});
+
+test("analyzes logs and builds communication messages", () => {
+  const logFindings = analyzeLogs("Authorization: Bearer abcdefghijklmnop\n503 gateway timeout", "app.log");
+  const pack = buildReviewPack([], {}, [], logFindings);
+  assert.equal(logFindings.length, 2);
+  assert.match(pack.communication.logIssueMessage, /Log analysis found 2 item/);
+  assert.match(pack.communication.vendorMessage, /Subject:/);
 });
 
 test("detects high-risk banking transport and storage issues", () => {

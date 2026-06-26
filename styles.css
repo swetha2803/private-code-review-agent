@@ -186,7 +186,7 @@ label,
 
 textarea {
   width: 100%;
-  min-height: 300px;
+  min-height: 220px;
   resize: vertical;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -448,6 +448,23 @@ button:disabled {
   line-height: 1.42;
 }
 
+.wide-card {
+  grid-column: span 2;
+}
+
+.message-card {
+  grid-column: span 4;
+}
+
+.message-card pre {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.45;
+  font-family: inherit;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -510,6 +527,11 @@ button:disabled {
 
   .pack-grid {
     grid-template-columns: 1fr;
+  }
+
+  .wide-card,
+  .message-card {
+    grid-column: auto;
   }
 
   .local-note {

@@ -4,9 +4,11 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const {
+  analyzeLogs,
   buildInventory,
   buildMarkdownReport,
   buildReviewPack,
+  extractApiInventory,
   isReviewableFile,
   scanText,
   shouldSkipDirectory,
@@ -25,23 +27,31 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const files = collectFiles(sourcePath);
 const findings = [];
+const logFindings = [];
 
 for (const file of files) {
   const content = fs.readFileSync(file.absolutePath, "utf8");
+  file.content = content;
   findings.push(...scanText(content, file.relativePath));
+  if (file.relativePath.toLowerCase().endsWith(".log")) {
+    logFindings.push(...analyzeLogs(content, file.relativePath));
+  }
 }
 
 const inventory = buildInventory(files);
 const summary = summarize(findings);
-const reviewPack = buildReviewPack(findings, inventory);
+const apiInventory = extractApiInventory(files);
+const reviewPack = buildReviewPack(findings, inventory, apiInventory, logFindings);
 const generatedAt = new Date().toISOString();
 const report = {
   tool: "private-code-review-agent",
   generatedAt,
   sourcePath,
   inventory,
+  apiInventory,
   summary,
   findings,
+  logFindings,
   reviewPack,
 };
 
@@ -55,6 +65,8 @@ fs.writeFileSync(markdownPath, buildMarkdownReport(report));
 console.log(`Decision: ${summary.decision}`);
 console.log(`Risk score: ${summary.riskScore}`);
 console.log(`Findings: ${findings.length}`);
+console.log(`APIs: ${apiInventory.length}`);
+console.log(`Log findings: ${logFindings.length}`);
 console.log(`JSON: ${jsonPath}`);
 console.log(`Markdown: ${markdownPath}`);
 

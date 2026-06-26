@@ -55,6 +55,13 @@
           placeholder="Paste a single file here, then choose a language hint and scan."
         ></textarea>
 
+        <label class="paste-label" for="logInput">Paste sanitized logs</label>
+        <textarea
+          id="logInput"
+          spellcheck="false"
+          placeholder="Paste sanitized integration logs here. Do not paste real customer data, tokens, OTPs, or secrets."
+        ></textarea>
+
         <div class="controls">
           <label>
             Language hint
@@ -196,6 +203,26 @@
         <article class="pack-card">
           <h3>Release Gates</h3>
           <ul id="releaseGatesList"></ul>
+        </article>
+        <article class="pack-card wide-card">
+          <h3>Reviewed APIs</h3>
+          <ul id="apiInventoryList"></ul>
+        </article>
+        <article class="pack-card wide-card">
+          <h3>Log Analyzer</h3>
+          <ul id="logAnalysisList"></ul>
+        </article>
+        <article class="pack-card message-card">
+          <h3>Vendor Message</h3>
+          <pre id="vendorMessage"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>API Team Message</h3>
+          <pre id="apiMessage"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>Log Issue Message</h3>
+          <pre id="logMessage"></pre>
         </article>
       </div>
     </section>
