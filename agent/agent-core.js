@@ -75,6 +75,12 @@ const rules = [
   rule("rate-limit-review", "Rate-limit review needed", "medium", /(login|otp|mfa|password|pin|beneficiary|transfer).{0,120}(endpoint|route|api|mutation|request)/i, "Verify lockout, replay, idempotency, and fraud monitoring."),
   rule("test-only-code", "Test-only banking logic", "medium", /(mock|stub|fake|dummy|sandbox).{0,100}(payment|transfer|auth|otp|login|account|beneficiary)/i, "Exclude test-only code from release artifacts."),
   rule("todo-security", "Security-sensitive TODO", "low", /(TODO|FIXME|HACK).{0,100}(security|auth|encrypt|token|password|temporary|bypass)/i, "Track and close before release."),
+  rule("mojibake-encoding", "Possible corrupted pasted characters or encoding issue", "medium", /[â�]/, "Remove corrupted characters or save/compile with the correct UTF-8 encoding."),
+  rule("filewriter-dynamic-path", "Dynamic file write path needs validation", "medium", /new\s+FileWriter\s*\(\s*[A-Za-z0-9_]+|Files\.write\s*\(\s*[A-Za-z0-9_]+/i, "Validate and constrain output paths before writing files."),
+  rule("mutable-map-return", "Mutable internal map may be exposed", "medium", /Map<[^>]+>\s+get[A-Za-z0-9_]*\s*\(\)\s*\{\s*return\s+[A-Za-z0-9_]+;\s*\}/, "Return an unmodifiable copy instead of exposing internal mutable state."),
+  rule("interrupted-no-reinterrupt", "InterruptedException may not restore interrupt status", "medium", /catch\s*\([^)]*InterruptedException[^)]*\)\s*\{(?![^}]*Thread\.currentThread\(\)\.interrupt\(\))/s, "Call Thread.currentThread().interrupt() when InterruptedException is caught."),
+  rule("quantity-no-validation", "Quantity input may lack positive-value validation", "medium", /(addItem|reduceStock)\s*\([^)]*int\s+quantity[^)]*\)\s*\{(?![^}]*quantity\s*<=\s*0)(?![^}]*quantity\s*<\s*1)/s, "Validate quantity is positive before stock or order calculations."),
+  rule("money-double", "Money represented with double", "low", /\bdouble\s+(price|subtotal|finalTotal|amount|tax|discount)|double\s+calculate\s*\(/i, "Use BigDecimal or a money type for financial calculations."),
 ];
 
 function rule(id, title, severity, pattern, fix) {
