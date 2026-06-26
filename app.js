@@ -69,6 +69,15 @@ const elements = {
   isgEvidenceOutput: document.querySelector("#isgEvidenceOutput"),
   eaMailOutput: document.querySelector("#eaMailOutput"),
   isgMailOutput: document.querySelector("#isgMailOutput"),
+  generateLldBtn: document.querySelector("#generateLldBtn"),
+  exportLldBtn: document.querySelector("#exportLldBtn"),
+  lldInput: document.querySelector("#lldInput"),
+  claimInput: document.querySelector("#claimInput"),
+  lldCoverageOutput: document.querySelector("#lldCoverageOutput"),
+  lldGapOutput: document.querySelector("#lldGapOutput"),
+  configReviewOutput: document.querySelector("#configReviewOutput"),
+  claimReviewOutput: document.querySelector("#claimReviewOutput"),
+  lldMailOutput: document.querySelector("#lldMailOutput"),
   gateDecision: document.querySelector("#gateDecision"),
   riskScore: document.querySelector("#riskScore"),
   evidenceCount: document.querySelector("#evidenceCount"),
@@ -482,6 +491,8 @@ elements.generateWorkbenchBtn.addEventListener("click", renderWorkbench);
 elements.exportWorkbenchBtn.addEventListener("click", exportWorkbench);
 elements.generateSignoffBtn.addEventListener("click", renderSignoffCenter);
 elements.exportSignoffBtn.addEventListener("click", exportSignoffPack);
+elements.generateLldBtn.addEventListener("click", renderLldCenter);
+elements.exportLldBtn.addEventListener("click", exportLldReview);
 
 elements.filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -495,6 +506,7 @@ elements.filterButtons.forEach((button) => {
 renderReviewPack();
 renderWorkbench();
 renderSignoffCenter();
+renderLldCenter();
 
 async function loadFiles(files) {
   const readableFiles = files.filter((file) => {
@@ -555,6 +567,7 @@ function runReview() {
   renderReviewPack();
   renderWorkbench();
   renderSignoffCenter();
+  renderLldCenter();
 }
 
 function scanSource(file) {
@@ -851,6 +864,7 @@ async function importScannerReport(event) {
   renderReviewPack();
   renderWorkbench();
   renderSignoffCenter();
+  renderLldCenter();
   elements.reportInput.value = "";
 }
 
@@ -1509,6 +1523,107 @@ function exportSignoffPack() {
   URL.revokeObjectURL(url);
 }
 
+function buildLldReview() {
+  const sources = currentSources();
+  const sourceText = sources.map((source) => source.content).join("\n").toLowerCase();
+  const fileNames = sources.map((source) => source.name.toLowerCase()).join("\n");
+  const lld = elements.lldInput.value.toLowerCase();
+  const claims = elements.claimInput.value.toLowerCase();
+  const pack = state.reviewPack || buildReviewPack(state.findings, sources);
+  const apis = pack.apiReview || [];
+
+  const coverageChecks = [
+    ["Component flow", /flow|sequence|component|module|service/.test(lld)],
+    ["API contracts", /api|endpoint|request|response|contract/.test(lld)],
+    ["Timeout/retry behavior", /timeout|retry|circuit|fallback|resilien/.test(lld)],
+    ["Error handling", /error|exception|failure|fallback|status code/.test(lld)],
+    ["Security controls", /auth|authorization|token|tls|encrypt|mask|secret|isg/.test(lld)],
+    ["Data handling", /data|pii|customer|account|cache|storage|retention/.test(lld)],
+    ["CI/CD and quality gates", /ci|cd|pipeline|pmd|sonar|quality|build|publish/.test(lld)],
+    ["Deployment/rollback", /deploy|rollback|release|feature flag|config/.test(lld)],
+  ];
+
+  const gaps = coverageChecks
+    .filter(([, passed]) => !passed)
+    .map(([name]) => `${name} is missing or unclear in LLD/walkthrough notes.`);
+
+  if (apis.length && !/api|endpoint|contract/.test(lld)) {
+    gaps.push(`${apis.length} API(s) detected in code, but API contracts are not clearly covered in LLD.`);
+  }
+  if (/timeout|webclient|axios|fetch|okhttp|retrofit/.test(sourceText) && !/timeout|retry/.test(lld)) {
+    gaps.push("Code/config suggests client calls, but LLD does not clearly explain timeout/retry behavior.");
+  }
+  if (state.findings.some((finding) => ["critical", "high"].includes(finding.severity))) {
+    gaps.push("Critical/high findings exist; LLD should mention remediation or risk acceptance before signoff.");
+  }
+
+  const configReview = [
+    /pmd|checkstyle|sonar|lint/.test(sourceText + lld) ? "Quality/static-analysis configuration is referenced; confirm it runs in CI and blocks failures." : "Quality/static-analysis configuration not found; request PMD/Checkstyle/Sonar/lint evidence.",
+    /pipeline|azure-pipelines|jenkins|github workflow|build|publish|ci|cd/.test(sourceText + lld + fileNames) ? "CI/CD is referenced; confirm branch, build, publish, approval, and artifact traceability." : "CI/CD evidence not found; request build/publish pipeline details.",
+    /timeout|webclient|okhttp|retrofit|axios|fetch/.test(sourceText + lld) ? "Timeout/client configuration is referenced; confirm values, retry policy, and production config source." : "Timeout/client configuration not found; request service client timeout evidence.",
+    /application\.ya?ml|application\.properties|config|env/.test(sourceText + lld + fileNames) ? "Application config is referenced; review endpoints, secrets, feature flags, and environment separation." : "Application config not evident; request environment config details.",
+  ];
+
+  const claimReview = [
+    /working for me|my machine|local machine|sapient machine/.test(claims) && "Claim depends on local machine validation; request CI/SIT/UAT evidence from approved environment.",
+    /devops|ci|cd|pipeline|build|publish/.test(claims) && "CI/CD ownership claimed; request pipeline run link/report, branch, artifact, and quality gate status.",
+    /timeout|webclient|config/.test(claims) && "Timeout/config claimed; request actual config file path, values, environment override, and test evidence.",
+    /pmd|checkstyle|standard/.test(claims) && "Code standardization claimed; request PMD/Checkstyle/Sonar report and failure threshold.",
+    /credential|clone|access|repo/.test(claims) && "Repo/access process mentioned; request DevOps/ISG confirmation of approved access and audit trail.",
+  ].filter(Boolean);
+
+  const mail = [
+    "Subject: LLD / Code Walkthrough Clarifications Required",
+    "",
+    "Hi Team,",
+    "",
+    "Based on the LLD/code walkthrough review, please provide clarification/evidence for the below items before closure/signoff.",
+    "",
+    "LLD / Code Gaps:",
+    ...bulletLines(gaps.length ? gaps : ["No major LLD coverage gaps captured by the local checklist."]),
+    "",
+    "Configuration / CI-CD Review:",
+    ...bulletLines(configReview),
+    "",
+    "Claim vs Evidence:",
+    ...bulletLines(claimReview.length ? claimReview : ["No specific developer claims captured. Please share evidence for all walkthrough statements."]),
+    "",
+    "Regards,",
+  ].join("\n");
+
+  return {
+    generatedAt: new Date().toISOString(),
+    coverageChecks: coverageChecks.map(([name, passed]) => ({ name, status: passed ? "Covered" : "Missing" })),
+    gaps,
+    configReview,
+    claimReview,
+    mail,
+  };
+}
+
+function renderLldCenter() {
+  const review = buildLldReview();
+  renderList(elements.lldCoverageOutput, review.coverageChecks.map((item) => `${item.name}: ${item.status}`));
+  renderList(elements.lldGapOutput, review.gaps.length ? review.gaps : ["No major LLD gaps captured."]);
+  renderList(elements.configReviewOutput, review.configReview);
+  renderList(elements.claimReviewOutput, review.claimReview.length ? review.claimReview : ["No specific claims entered."]);
+  elements.lldMailOutput.textContent = review.mail;
+  elements.exportLldBtn.disabled = false;
+}
+
+function exportLldReview() {
+  const review = buildLldReview();
+  const blob = new Blob([JSON.stringify(review, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `lld-evidence-review-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function currentSources() {
   const pasted = elements.codeInput.value.trim();
   return state.files.length ? state.files : pasted ? [{ name: "pasted-code", content: pasted }] : [];
@@ -1705,6 +1820,7 @@ function clearAll() {
   renderReviewPack();
   renderWorkbench();
   renderSignoffCenter();
+  renderLldCenter();
 }
 
 function countBySeverity(findings) {

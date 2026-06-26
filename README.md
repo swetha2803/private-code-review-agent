@@ -56,6 +56,7 @@ Integration lead features:
 - EA template generator with architecture pattern, data flow, dependencies, API summary, NFRs, deployment, and rollback sections.
 - ISG pre-assessment with readiness score, missing evidence, open gaps, security exceptions, and submission mail.
 - Application flow explanation for uploaded/pasted/folder-scanned source.
+- LLD and walkthrough validation for flow coverage, API contracts, timeout/retry, error handling, security controls, data handling, CI/CD, deployment, and claim-vs-evidence review.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 

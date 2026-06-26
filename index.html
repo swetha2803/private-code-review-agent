@@ -448,6 +448,60 @@
       </div>
     </section>
 
+    <section class="lld-center" aria-labelledby="lldCenterTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="lldCenterTitle">LLD and Evidence Validation</h2>
+          <p>
+            Compare explained flow, LLD notes, code, configs, and developer
+            claims against review evidence.
+          </p>
+        </div>
+        <div class="result-actions">
+          <button id="generateLldBtn" type="button" class="primary-btn">
+            Validate LLD
+          </button>
+          <button id="exportLldBtn" type="button" class="ghost-btn" disabled>
+            Export LLD Review
+          </button>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <label class="wide-field">
+          LLD / Flow Explanation
+          <textarea id="lldInput" placeholder="Paste sanitized LLD, flow explanation, component design, timeout/config notes, CI/CD notes..."></textarea>
+        </label>
+        <label class="wide-field">
+          Developer Claims / Walkthrough Notes
+          <textarea id="claimInput" placeholder="Example: works on my machine, CI/CD managed by DevOps, timeout config exists, PMD is standardized..."></textarea>
+        </label>
+      </div>
+
+      <div class="pack-grid">
+        <article class="pack-card">
+          <h3>LLD Coverage</h3>
+          <ul id="lldCoverageOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Code vs LLD Gaps</h3>
+          <ul id="lldGapOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Config / CI-CD Review</h3>
+          <ul id="configReviewOutput"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Claim vs Evidence</h3>
+          <ul id="claimReviewOutput"></ul>
+        </article>
+        <article class="pack-card message-card">
+          <h3>LLD Clarification Mail</h3>
+          <pre id="lldMailOutput"></pre>
+        </article>
+      </div>
+    </section>
+
     <section class="local-note" aria-label="Privacy model">
       <h2>Privacy Model</h2>
       <p>
