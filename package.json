@@ -1,0 +1,12 @@
+{
+  "name": "private-code-review-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline vendor code review agent for banking security review",
+  "scripts": {
+    "agent": "node agent/review-agent.js",
+    "test": "node --test agent/*.test.js",
+    "check": "node --check app.js && node --check agent/agent-core.js && node --check agent/review-agent.js"
+  },
+  "license": "UNLICENSED"
+}

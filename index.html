@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta
+      name="description"
+      content="Private browser-only code review and security scanner"
+    />
+    <title>Private Code Review Desk</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Private Code Review Desk</h1>
+        <p>Browser-only static review for pasted or uploaded source files.</p>
+      </div>
+      <div class="status-pill" id="privacyStatus">Offline-ready</div>
+    </header>
+
+    <main class="layout">
+      <section class="panel input-panel" aria-labelledby="inputTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="inputTitle">Source</h2>
+            <p>No code is uploaded. Files are read locally by your browser.</p>
+          </div>
+          <button id="clearBtn" type="button" class="ghost-btn">Clear</button>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <input
+            id="fileInput"
+            type="file"
+            multiple
+            webkitdirectory
+            aria-label="Upload source files or folder"
+          />
+          <div>
+            <strong>Drop files or a folder here</strong>
+            <span>or choose files from your computer</span>
+          </div>
+        </div>
+
+        <label class="paste-label" for="codeInput">Paste code</label>
+        <textarea
+          id="codeInput"
+          spellcheck="false"
+          placeholder="Paste a single file here, then choose a language hint and scan."
+        ></textarea>
+
+        <div class="controls">
+          <label>
+            Language hint
+            <select id="languageHint">
+              <option value="auto">Auto detect</option>
+              <option value="js">JavaScript / TypeScript</option>
+              <option value="react-native">React Native</option>
+              <option value="java">Java / Kotlin</option>
+              <option value="swift">Swift</option>
+              <option value="config">Config / JSON / YAML</option>
+            </select>
+          </label>
+          <button id="scanBtn" type="button" class="primary-btn">Run Review</button>
+        </div>
+      </section>
+
+      <section class="panel results-panel" aria-labelledby="resultsTitle">
+        <div class="section-head">
+          <div>
+            <h2 id="resultsTitle">Findings</h2>
+            <p id="summaryText">Add code to begin.</p>
+          </div>
+          <div class="result-actions">
+            <label class="import-report">
+              Import Scanner Report
+              <input
+                id="reportInput"
+                type="file"
+                accept=".json,.sarif"
+                aria-label="Import Semgrep, Gitleaks, or SARIF report"
+              />
+            </label>
+            <button id="downloadBtn" type="button" class="ghost-btn" disabled>
+              Export Report
+            </button>
+          </div>
+        </div>
+
+        <div class="score-grid" aria-label="Review summary">
+          <div>
+            <span id="criticalCount">0</span>
+            <small>Critical</small>
+          </div>
+          <div>
+            <span id="highCount">0</span>
+            <small>High</small>
+          </div>
+          <div>
+            <span id="mediumCount">0</span>
+            <small>Medium</small>
+          </div>
+          <div>
+            <span id="lowCount">0</span>
+            <small>Low</small>
+          </div>
+        </div>
+
+        <div class="filters" aria-label="Finding filters">
+          <button class="filter-btn active" data-filter="all" type="button">All</button>
+          <button class="filter-btn" data-filter="critical" type="button">Critical</button>
+          <button class="filter-btn" data-filter="high" type="button">High</button>
+          <button class="filter-btn" data-filter="medium" type="button">Medium</button>
+          <button class="filter-btn" data-filter="low" type="button">Low</button>
+        </div>
+
+        <div id="findingsList" class="findings-list">
+          <div class="empty-state">
+            Upload a folder, upload files, or paste code to run a private review.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <section class="review-pack" aria-labelledby="reviewPackTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="reviewPackTitle">Review Pack</h2>
+          <p>
+            Offline-generated security testing, unit testing, ISG checklist, and
+            dummy test data from the current findings.
+          </p>
+        </div>
+        <button id="downloadPackBtn" type="button" class="ghost-btn" disabled>
+          Export Review Pack
+        </button>
+        <button id="downloadMarkdownBtn" type="button" class="ghost-btn" disabled>
+          Export Markdown
+        </button>
+      </div>
+
+      <div class="gate-strip" id="gateStrip">
+        <div>
+          <span id="gateDecision">Not reviewed</span>
+          <small>Acceptance gate</small>
+        </div>
+        <div>
+          <span id="riskScore">0</span>
+          <small>Risk score</small>
+        </div>
+        <div>
+          <span id="evidenceCount">0</span>
+          <small>Evidence items</small>
+        </div>
+        <div>
+          <span id="manualCount">0</span>
+          <small>Manual checks</small>
+        </div>
+      </div>
+
+      <div class="pack-grid">
+        <article class="pack-card">
+          <h3>Security Testing</h3>
+          <ul id="securityTestsList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Unit Test Generation</h3>
+          <ul id="unitTestsList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>ISG Testing</h3>
+          <ul id="isgTestsList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Dummy Testing Data</h3>
+          <ul id="dummyTestsList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Vendor Evidence</h3>
+          <ul id="evidenceList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Manual Review</h3>
+          <ul id="manualReviewList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Abuse Cases</h3>
+          <ul id="abuseCasesList"></ul>
+        </article>
+        <article class="pack-card">
+          <h3>Release Gates</h3>
+          <ul id="releaseGatesList"></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="local-note" aria-label="Privacy model">
+      <h2>Privacy Model</h2>
+      <p>
+        This is a static offline tool. It has no backend, no tracking script, no
+        external dependencies, and no network upload path. For formal vendor
+        review, run approved local scanners and import their JSON or SARIF
+        reports here.
+      </p>
+    </section>
+
+    <script src="app.js"></script>
+  </body>
+</html>

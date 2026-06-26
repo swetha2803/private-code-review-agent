@@ -1,0 +1,196 @@
+rules:
+  - id: banking.no-cleartext-http
+    message: Banking code should not call non-local HTTP endpoints.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "http://(?!localhost|127\\.0\\.0\\.1)"
+
+  - id: banking.no-disabled-tls-validation
+    message: TLS or certificate validation appears disabled.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(rejectUnauthorized\\s*:\\s*false|TrustAll|HostnameVerifier|allowAllHostnameVerifier|NSAllowsArbitraryLoads\\s*[:=]\\s*true)"
+
+  - id: banking.no-sensitive-debug-logging
+    message: Sensitive data may be written to logs.
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(console\\.(log|warn|error|debug)|Log\\.(d|i|w|e)|print\\s*\\().*(token|password|pin|otp|account|session)"
+
+  - id: banking.no-weak-crypto
+    message: Weak or obsolete cryptography detected.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "\\b(MD5|SHA1|DES|3DES|RC4|ECB|PKCS1Padding)\\b"
+
+  - id: banking.no-auth-bypass
+    message: Possible authentication or authorization bypass logic.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(bypass|skip|disable|mock).{0,60}(auth|authorization|login|otp|mfa|biometric)"
+
+  - id: banking.no-otp-test-values
+    message: OTP or MFA handling appears to include weak test/default behavior.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(otp|mfa|oneTimePassword).{0,120}(hardcode|default|123456|000000|autoFill|clipboard|log|console)"
+
+  - id: banking.no-risky-webview
+    message: Risky WebView configuration detected.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(javaScriptEnabled\\s*[:=]\\s*true|setJavaScriptEnabled\\s*\\(\\s*true|allowFileAccess\\s*[:=]\\s*true|setAllowFileAccess\\s*\\(\\s*true|originWhitelist\\s*=\\s*\\{\\s*\\[\\s*['\\\"]\\*['\\\"])"
+
+  - id: banking.no-insecure-random
+    message: Security-sensitive code should not use insecure randomness.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "\\b(Math\\.random|Random\\(|arc4random\\(|java\\.util\\.Random)\\b"
+
+  - id: banking.review-sensitive-permissions
+    message: Sensitive mobile permission requires business and privacy justification.
+    severity: WARNING
+    languages:
+      - generic
+    pattern-regex: "(READ_SMS|RECEIVE_SMS|READ_CONTACTS|READ_CALL_LOG|ACCESS_FINE_LOCATION|RECORD_AUDIO|CAMERA)"
+
+  - id: banking.no-dynamic-dependency-version
+    message: Dynamic or forced dependency resolution requires security approval.
+    severity: WARNING
+    languages:
+      - generic
+    pattern-regex: "(resolutionStrategy|force\\s+[\"']|latest\\.release|\\+[\"']|changing\\s*=\\s*true)"
+
+  - id: banking.review-android-exported-components
+    message: Android exported component requires permission and auth validation review.
+    severity: ERROR
+    languages:
+      - generic
+    pattern-regex: "android:exported\\s*=\\s*[\"']true[\"']"
+
+  - id: banking.no-android-backup-sensitive-app
+    message: Android backup enabled can expose sensitive banking data.
+    severity: ERROR
+    languages:
+      - generic
+    pattern-regex: "android:allowBackup\\s*=\\s*[\"']true[\"']"
+
+  - id: banking.no-sensitive-clipboard
+    message: Sensitive data appears to be copied to clipboard.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(Clipboard|UIPasteboard|setString|setPrimaryClip).{0,100}(otp|token|password|pin|account|card)"
+
+  - id: banking.review-deep-links
+    message: Deep link handling requires auth and parameter validation review.
+    severity: WARNING
+    languages:
+      - generic
+    pattern-regex: "(intent-filter|CFBundleURLSchemes|Linking\\.addEventListener|openURL|handleOpenURL|deepLink|deeplink)"
+
+  - id: banking.no-command-exec-from-input
+    message: Possible command execution from untrusted input.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(exec|spawn|Runtime\\.getRuntime\\(\\)\\.exec|ProcessBuilder|system\\().{0,120}(input|request|param|body|command)"
+
+  - id: banking.no-path-from-input
+    message: Possible path traversal risk from input-built file path.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(readFile|writeFile|File\\(|Paths\\.get|path\\.join).{0,120}(request|param|input|filename|fileName|path)"
+
+  - id: banking.no-wide-open-cors
+    message: Wide-open CORS requires security review.
+    severity: ERROR
+    languages:
+      - generic
+    pattern-regex: "(Access-Control-Allow-Origin|cors\\().{0,80}(\\*|origin\\s*:\\s*true)"
+
+  - id: banking.no-pinning-bypass
+    message: Certificate pinning bypass pattern detected.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(pinning|certificatePinner|sslPinning|TrustKit).{0,120}(disable|bypass|false|debug|mock)"
+
+  - id: banking.no-sensitive-telemetry
+    message: Sensitive data may enter analytics, crash reporting, or telemetry.
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(analytics|firebase|crashlytics|appcenter|sentry|datadog|newrelic).{0,120}(account|card|pan|token|password|otp|pin|customer)"
+
+  - id: banking.no-prod-test-code
+    message: Test or mock banking flow may be present in production path.
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+      - java
+      - kotlin
+      - swift
+    pattern-regex: "(mock|stub|fake|dummy|sandbox).{0,100}(payment|transfer|auth|otp|login|account|beneficiary)"
