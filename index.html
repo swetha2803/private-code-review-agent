@@ -25,6 +25,7 @@
     </header>
 
     <nav class="app-nav" aria-label="Workspace navigation">
+      <a href="#quickStartTitle">Quick Start</a>
       <a href="#sourceReview">Source Review</a>
       <a href="#reviewPackTitle">Review Pack</a>
       <a href="#workbenchTitle">Workbench</a>
@@ -32,6 +33,45 @@
       <a href="#lldCenterTitle">LLD Evidence</a>
       <a href="#privacyModelTitle">Privacy</a>
     </nav>
+
+    <section class="quick-start app-section" aria-labelledby="quickStartTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="quickStartTitle">Quick Start</h2>
+          <p>Use this flow if you are opening the tool for the first time inside Citrix.</p>
+        </div>
+        <button type="button" class="collapse-btn" data-collapse-target="quickStartBody">Hide</button>
+      </div>
+      <div id="quickStartBody">
+        <div class="quick-grid">
+          <div>
+            <span>1</span>
+            <strong>Add code</strong>
+            <p>Upload a ZIP, upload a folder, upload files, or paste one file.</p>
+          </div>
+          <div>
+            <span>2</span>
+            <strong>Run review</strong>
+            <p>Click Run Review to generate findings, API list, flow, and risk summary.</p>
+          </div>
+          <div>
+            <span>3</span>
+            <strong>Fill context</strong>
+            <p>Add FS, LLD, POCs, issues, EA/ISG evidence, and review profile.</p>
+          </div>
+          <div>
+            <span>4</span>
+            <strong>Export outputs</strong>
+            <p>Export tracker CSV, mails, review pack, EA/ISG pack, or session JSON.</p>
+          </div>
+        </div>
+        <div class="hint-strip">
+          <strong>Citrix mode:</strong>
+          Everything in this browser page runs locally. Do not paste real customer data,
+          passwords, OTPs, tokens, or unmasked account/card numbers.
+        </div>
+      </div>
+    </section>
 
     <section class="session-bar" aria-label="Session manager">
       <div>

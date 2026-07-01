@@ -116,6 +116,7 @@ label,
 
 .panel,
 .session-bar,
+.quick-start,
 .review-pack,
 .workbench,
 .signoff-center,
@@ -124,6 +125,56 @@ label,
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+.quick-start {
+  margin: 20px 32px 0;
+  padding: 18px;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.quick-grid div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfd;
+}
+
+.quick-grid span {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--primary);
+  font-weight: 850;
+}
+
+.quick-grid strong {
+  display: block;
+  margin-top: 10px;
+}
+
+.quick-grid p {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.hint-strip {
+  margin-top: 12px;
+  border: 1px solid #f0d58a;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff9e8;
+  color: var(--text);
+  line-height: 1.45;
 }
 
 .session-bar {
@@ -620,6 +671,14 @@ button:disabled {
     align-items: stretch;
     flex-direction: column;
     margin: 16px 16px 0;
+  }
+
+  .quick-start {
+    margin: 16px 16px 0;
+  }
+
+  .quick-grid {
+    grid-template-columns: 1fr;
   }
 
   .panel {
