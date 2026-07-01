@@ -45,6 +45,20 @@ npm run agent -- "C:\path\to\vendor-source.zip"
 
 ZIP contents are extracted to a local temporary folder, scanned locally, and removed after the report is generated.
 
+Scan an Azure DevOps Git repo locally:
+
+```powershell
+.\tools\scan-azure-repo.ps1 -RepoUrl "https://dev.azure.com/org/project/_git/repo" -Branch "develop"
+```
+
+Scan only one path using sparse checkout:
+
+```powershell
+.\tools\scan-azure-repo.ps1 -RepoUrl "https://dev.azure.com/org/project/_git/repo" -Branch "develop" -SparsePath "apps/mobile/src"
+```
+
+The repo is cloned into a local temporary folder, scanned locally, and deleted after report generation. Credentials are not stored by this tool; Git/Azure authentication is handled by your local Git credential manager.
+
 Integration lead features:
 
 - API inventory extracted from source patterns.
