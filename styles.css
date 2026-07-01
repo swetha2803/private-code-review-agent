@@ -44,6 +44,35 @@ input {
   border-bottom: 1px solid var(--line);
 }
 
+.app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 10px 32px;
+  background: #eef3f5;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-nav a {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  background: #ffffff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.app-nav a:hover {
+  border-color: var(--primary);
+  color: var(--primary-strong);
+}
+
 h1,
 h2,
 p {
@@ -122,6 +151,16 @@ label,
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+}
+
+.collapse-btn {
+  color: var(--primary-strong);
+  background: #eef8fb;
+  border-color: #b7d7e0;
+}
+
+.is-collapsed {
+  display: none !important;
 }
 
 .result-actions {
@@ -566,6 +605,10 @@ button:disabled {
     align-items: flex-start;
     flex-direction: column;
     padding: 20px;
+  }
+
+  .app-nav {
+    padding: 10px 16px;
   }
 
   .layout {

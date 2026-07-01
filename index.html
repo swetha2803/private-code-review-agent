@@ -18,11 +18,20 @@
   <body>
     <header class="topbar">
       <div>
-        <h1>Private Code Review Desk</h1>
-        <p>Browser-only static review for pasted or uploaded source files.</p>
+        <h1>Integration Review Command Center</h1>
+        <p>Offline review workspace for code, APIs, logs, FS, LLD, EA, ISG, CR, trackers, and mails.</p>
       </div>
       <div class="status-pill" id="privacyStatus">Offline-ready</div>
     </header>
+
+    <nav class="app-nav" aria-label="Workspace navigation">
+      <a href="#sourceReview">Source Review</a>
+      <a href="#reviewPackTitle">Review Pack</a>
+      <a href="#workbenchTitle">Workbench</a>
+      <a href="#signoffCenterTitle">EA / ISG</a>
+      <a href="#lldCenterTitle">LLD Evidence</a>
+      <a href="#privacyModelTitle">Privacy</a>
+    </nav>
 
     <section class="session-bar" aria-label="Session manager">
       <div>
@@ -48,70 +57,75 @@
       </div>
     </section>
 
-    <main class="layout">
+    <main class="layout" id="sourceReview">
       <section class="panel input-panel" aria-labelledby="inputTitle">
-        <div class="section-head">
+        <div class="section-head collapsible-head">
           <div>
             <h2 id="inputTitle">Source</h2>
             <p>No code is uploaded. Files are read locally by your browser.</p>
           </div>
-          <button id="clearBtn" type="button" class="ghost-btn">Clear</button>
-        </div>
-
-        <div class="dropzone" id="dropzone">
-          <input
-            id="fileInput"
-            type="file"
-            multiple
-            webkitdirectory
-            aria-label="Upload source files or folder"
-          />
-          <div>
-            <strong>Drop files or a folder here</strong>
-            <span>or choose files from your computer</span>
+          <div class="result-actions">
+            <button type="button" class="collapse-btn" data-collapse-target="sourceBody">Hide</button>
+            <button id="clearBtn" type="button" class="ghost-btn">Clear</button>
           </div>
         </div>
 
-        <div class="dropzone zip-zone" id="zipDropzone">
-          <input
-            id="zipInput"
-            type="file"
-            accept=".zip,application/zip"
-            aria-label="Upload source ZIP file"
-          />
-          <div>
-            <strong>Drop a source ZIP here</strong>
-            <span>review ZIP contents locally in this browser</span>
+        <div id="sourceBody">
+          <div class="dropzone" id="dropzone">
+            <input
+              id="fileInput"
+              type="file"
+              multiple
+              webkitdirectory
+              aria-label="Upload source files or folder"
+            />
+            <div>
+              <strong>Drop files or a folder here</strong>
+              <span>or choose files from your computer</span>
+            </div>
           </div>
-        </div>
 
-        <label class="paste-label" for="codeInput">Paste code</label>
-        <textarea
-          id="codeInput"
-          spellcheck="false"
-          placeholder="Paste a single file here, then choose a language hint and scan."
-        ></textarea>
+          <div class="dropzone zip-zone" id="zipDropzone">
+            <input
+              id="zipInput"
+              type="file"
+              accept=".zip,application/zip"
+              aria-label="Upload source ZIP file"
+            />
+            <div>
+              <strong>Drop a source ZIP here</strong>
+              <span>review ZIP contents locally in this browser</span>
+            </div>
+          </div>
 
-        <label class="paste-label" for="logInput">Paste sanitized logs</label>
-        <textarea
-          id="logInput"
-          spellcheck="false"
-          placeholder="Paste sanitized integration logs here. Do not paste real customer data, tokens, OTPs, or secrets."
-        ></textarea>
+          <label class="paste-label" for="codeInput">Paste code</label>
+          <textarea
+            id="codeInput"
+            spellcheck="false"
+            placeholder="Paste a single file here, then choose a language hint and scan."
+          ></textarea>
 
-        <div class="controls">
-          <label>
-            Language hint
-            <select id="languageHint">
-              <option value="auto">Auto detect</option>
-              <option value="js">JavaScript / TypeScript</option>
-              <option value="react-native">React Native</option>
-              <option value="java">Java / Kotlin</option>
-              <option value="swift">Swift</option>
-              <option value="config">Config / JSON / YAML</option>
-            </select>
-          </label>
-          <button id="scanBtn" type="button" class="primary-btn">Run Review</button>
+          <label class="paste-label" for="logInput">Paste sanitized logs</label>
+          <textarea
+            id="logInput"
+            spellcheck="false"
+            placeholder="Paste sanitized integration logs here. Do not paste real customer data, tokens, OTPs, or secrets."
+          ></textarea>
+
+          <div class="controls">
+            <label>
+              Language hint
+              <select id="languageHint">
+                <option value="auto">Auto detect</option>
+                <option value="js">JavaScript / TypeScript</option>
+                <option value="react-native">React Native</option>
+                <option value="java">Java / Kotlin</option>
+                <option value="swift">Swift</option>
+                <option value="config">Config / JSON / YAML</option>
+              </select>
+            </label>
+            <button id="scanBtn" type="button" class="primary-btn">Run Review</button>
+          </div>
         </div>
       </section>
 
@@ -172,7 +186,7 @@
       </section>
     </main>
 
-    <section class="review-pack" aria-labelledby="reviewPackTitle">
+    <section class="review-pack app-section" aria-labelledby="reviewPackTitle">
       <div class="section-head">
         <div>
           <h2 id="reviewPackTitle">Review Pack</h2>
@@ -181,6 +195,7 @@
             dummy test data from the current findings.
           </p>
         </div>
+        <button type="button" class="collapse-btn" data-collapse-target="reviewPackBody">Hide</button>
         <button id="downloadPackBtn" type="button" class="ghost-btn" disabled>
           Export Review Pack
         </button>
@@ -189,6 +204,7 @@
         </button>
       </div>
 
+      <div id="reviewPackBody">
       <div class="gate-strip" id="gateStrip">
         <div>
           <span id="gateDecision">Not reviewed</span>
@@ -266,9 +282,10 @@
           <pre id="logMessage"></pre>
         </article>
       </div>
+      </div>
     </section>
 
-    <section class="workbench" aria-labelledby="workbenchTitle">
+    <section class="workbench app-section" aria-labelledby="workbenchTitle">
       <div class="section-head">
         <div>
           <h2 id="workbenchTitle">Integration Lead Workbench</h2>
@@ -281,12 +298,14 @@
           <button id="generateWorkbenchBtn" type="button" class="primary-btn">
             Generate Work Pack
           </button>
+          <button type="button" class="collapse-btn" data-collapse-target="workbenchBody">Hide</button>
           <button id="exportWorkbenchBtn" type="button" class="ghost-btn" disabled>
             Export Work Pack
           </button>
         </div>
       </div>
 
+      <div id="workbenchBody">
       <div class="workbench-grid">
         <label>
           Application / Module
@@ -360,9 +379,10 @@
           <pre id="gammaOutput"></pre>
         </article>
       </div>
+      </div>
     </section>
 
-    <section class="signoff-center" aria-labelledby="signoffCenterTitle">
+    <section class="signoff-center app-section" aria-labelledby="signoffCenterTitle">
       <div class="section-head">
         <div>
           <h2 id="signoffCenterTitle">EA and ISG Signoff Center</h2>
@@ -375,12 +395,14 @@
           <button id="generateSignoffBtn" type="button" class="primary-btn">
             Generate Signoff Pack
           </button>
+          <button type="button" class="collapse-btn" data-collapse-target="signoffBody">Hide</button>
           <button id="exportSignoffBtn" type="button" class="ghost-btn" disabled>
             Export Signoff Pack
           </button>
         </div>
       </div>
 
+      <div id="signoffBody">
       <div class="workbench-grid">
         <label>
           Architecture Pattern
@@ -483,9 +505,10 @@
           <pre id="isgMailOutput"></pre>
         </article>
       </div>
+      </div>
     </section>
 
-    <section class="lld-center" aria-labelledby="lldCenterTitle">
+    <section class="lld-center app-section" aria-labelledby="lldCenterTitle">
       <div class="section-head">
         <div>
           <h2 id="lldCenterTitle">LLD and Evidence Validation</h2>
@@ -498,12 +521,14 @@
           <button id="generateLldBtn" type="button" class="primary-btn">
             Validate LLD
           </button>
+          <button type="button" class="collapse-btn" data-collapse-target="lldBody">Hide</button>
           <button id="exportLldBtn" type="button" class="ghost-btn" disabled>
             Export LLD Review
           </button>
         </div>
       </div>
 
+      <div id="lldBody">
       <div class="workbench-grid">
         <label>
           Review Flow
@@ -556,10 +581,11 @@
           <pre id="lldMailOutput"></pre>
         </article>
       </div>
+      </div>
     </section>
 
     <section class="local-note" aria-label="Privacy model">
-      <h2>Privacy Model</h2>
+      <h2 id="privacyModelTitle">Privacy Model</h2>
       <p>
         This is a static offline tool. It has no backend, no tracking script, no
         external dependencies, and no network upload path. For formal vendor

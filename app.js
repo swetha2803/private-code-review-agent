@@ -540,6 +540,15 @@ elements.filterButtons.forEach((button) => {
   });
 });
 
+document.querySelectorAll(".collapse-btn").forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = document.querySelector(`#${button.dataset.collapseTarget}`);
+    if (!target) return;
+    const collapsed = target.classList.toggle("is-collapsed");
+    button.textContent = collapsed ? "Show" : "Hide";
+  });
+});
+
 renderReviewPack();
 renderWorkbench();
 renderSignoffCenter();
