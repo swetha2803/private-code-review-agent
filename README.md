@@ -45,6 +45,8 @@ npm run agent -- "C:\path\to\vendor-source.zip"
 
 ZIP contents are extracted to a local temporary folder, scanned locally, and removed after the report is generated.
 
+The browser dashboard can also review ZIP files locally using the bundled offline `lib/fflate.js` file. For very large repositories, the local agent is still recommended.
+
 Scan an Azure DevOps Git repo locally:
 
 ```powershell

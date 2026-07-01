@@ -3,6 +3,7 @@ const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
+  "./lib/fflate.js",
   "./app.js",
   "./manifest.webmanifest",
 ];

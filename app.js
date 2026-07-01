@@ -15,6 +15,8 @@ const elements = {
   sessionInput: document.querySelector("#sessionInput"),
   exportTrackerCsvBtn: document.querySelector("#exportTrackerCsvBtn"),
   dropzone: document.querySelector("#dropzone"),
+  zipInput: document.querySelector("#zipInput"),
+  zipDropzone: document.querySelector("#zipDropzone"),
   codeInput: document.querySelector("#codeInput"),
   logInput: document.querySelector("#logInput"),
   languageHint: document.querySelector("#languageHint"),
@@ -119,6 +121,7 @@ const allowedExtensions = new Set([
   "env",
   "md",
   "txt",
+  "log",
 ]);
 
 const rules = [
@@ -472,6 +475,10 @@ if ("serviceWorker" in navigator) {
 elements.fileInput.addEventListener("change", async (event) => {
   await loadFiles(Array.from(event.target.files || []));
 });
+elements.zipInput.addEventListener("change", async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (file) await loadZipFile(file);
+});
 elements.saveSessionBtn.addEventListener("click", saveSessionLocal);
 elements.loadSessionBtn.addEventListener("click", loadSessionLocal);
 elements.exportSessionBtn.addEventListener("click", exportSessionFile);
@@ -483,6 +490,10 @@ elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
     event.preventDefault();
     elements.dropzone.classList.add("dragover");
   });
+  elements.zipDropzone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    elements.zipDropzone.classList.add("dragover");
+  });
 });
 
 ["dragleave", "drop"].forEach((eventName) => {
@@ -490,10 +501,21 @@ elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
     event.preventDefault();
     elements.dropzone.classList.remove("dragover");
   });
+  elements.zipDropzone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    elements.zipDropzone.classList.remove("dragover");
+  });
 });
 
 elements.dropzone.addEventListener("drop", async (event) => {
   await loadFiles(Array.from(event.dataTransfer.files || []));
+});
+
+elements.zipDropzone.addEventListener("drop", async (event) => {
+  const file = Array.from(event.dataTransfer.files || []).find((item) =>
+    item.name.toLowerCase().endsWith(".zip"),
+  );
+  if (file) await loadZipFile(file);
 });
 
 elements.scanBtn.addEventListener("click", runReview);
@@ -548,6 +570,32 @@ async function loadFiles(files) {
 
   state.files = loaded.filter(Boolean);
   elements.summaryText.textContent = `${state.files.length} file(s) loaded locally.`;
+}
+
+async function loadZipFile(file) {
+  if (!window.fflate || !window.fflate.unzipSync) {
+    elements.summaryText.textContent = "ZIP support is unavailable. Missing local lib/fflate.js.";
+    return;
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const extracted = window.fflate.unzipSync(bytes);
+  const decoder = new TextDecoder("utf-8", { fatal: false });
+  const loaded = [];
+
+  Object.entries(extracted).forEach(([name, content]) => {
+    if (name.endsWith("/")) return;
+    const extension = getExtension(name);
+    if (!allowedExtensions.has(extension)) return;
+    loaded.push({
+      name,
+      content: decoder.decode(content),
+    });
+  });
+
+  state.files = loaded;
+  elements.summaryText.textContent = `${loaded.length} reviewable file(s) extracted locally from ${file.name}.`;
+  elements.zipInput.value = "";
 }
 
 function runReview() {

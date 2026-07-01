@@ -61,7 +61,7 @@ Recommended checks:
 
 ## ZIP Review Test
 
-The browser dashboard does not extract ZIP files. Use the local agent:
+The browser dashboard supports local ZIP upload through bundled `lib/fflate.js`. For repeatable CLI validation, use the local agent:
 
 ```powershell
 npm run agent -- "C:\path\to\vendor-code.zip"

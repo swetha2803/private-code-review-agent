@@ -8,5 +8,8 @@
     "test": "node --test agent/*.test.js",
     "check": "node --check app.js && node --check agent/agent-core.js && node --check agent/review-agent.js"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "fflate": "0.8.2"
+  }
 }

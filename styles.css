@@ -178,6 +178,10 @@ label,
     background 160ms ease;
 }
 
+.zip-zone {
+  min-height: 96px;
+}
+
 .dropzone.dragover {
   border-color: var(--primary);
   background: #eef8fb;

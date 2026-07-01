@@ -72,6 +72,19 @@
           </div>
         </div>
 
+        <div class="dropzone zip-zone" id="zipDropzone">
+          <input
+            id="zipInput"
+            type="file"
+            accept=".zip,application/zip"
+            aria-label="Upload source ZIP file"
+          />
+          <div>
+            <strong>Drop a source ZIP here</strong>
+            <span>review ZIP contents locally in this browser</span>
+          </div>
+        </div>
+
         <label class="paste-label" for="codeInput">Paste code</label>
         <textarea
           id="codeInput"
@@ -555,6 +568,7 @@
       </p>
     </section>
 
+    <script src="lib/fflate.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
