@@ -15,6 +15,7 @@ const elements = {
   sessionInput: document.querySelector("#sessionInput"),
   exportTrackerCsvBtn: document.querySelector("#exportTrackerCsvBtn"),
   refreshAssistantBtn: document.querySelector("#refreshAssistantBtn"),
+  explainCodeBtn: document.querySelector("#explainCodeBtn"),
   assistantSummary: document.querySelector("#assistantSummary"),
   assistantNextActions: document.querySelector("#assistantNextActions"),
   assistantVendorQuestions: document.querySelector("#assistantVendorQuestions"),
@@ -495,6 +496,7 @@ elements.exportSessionBtn.addEventListener("click", exportSessionFile);
 elements.sessionInput.addEventListener("change", importSessionFile);
 elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
 elements.refreshAssistantBtn.addEventListener("click", renderAssistant);
+elements.explainCodeBtn.addEventListener("click", explainCode);
 
 ["dragenter", "dragover"].forEach((eventName) => {
   elements.dropzone.addEventListener(eventName, (event) => {
@@ -1321,6 +1323,20 @@ function renderAssistant() {
   elements.assistantFunctionalExplanation.textContent = advice.functionalExplanation;
   renderList(elements.assistantStrictGate, advice.strictGate);
   elements.assistantMailDraft.textContent = advice.mailDraft;
+}
+
+function explainCode() {
+  const hasInput = state.files.length || elements.codeInput.value.trim() || elements.logInput.value.trim();
+  if (hasInput && !state.findings.length && !state.reviewPack) {
+    runReview();
+  } else {
+    renderAssistant();
+  }
+
+  document.querySelector("#assistantTitle").scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
 }
 
 function buildCodeTechnicalExplanation(sources, pack, findings) {
