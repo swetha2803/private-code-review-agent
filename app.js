@@ -590,6 +590,7 @@ document.querySelectorAll(".collapse-btn").forEach((button) => {
   });
 });
 
+initializeCollapsedSections();
 renderReviewPack();
 renderAssistant();
 renderWorkbench();
@@ -597,6 +598,15 @@ renderIssueRegister();
 renderPrintableReport();
 renderSignoffCenter();
 renderLldCenter();
+
+function initializeCollapsedSections() {
+  document.querySelectorAll(".collapse-btn[data-start-collapsed='true']").forEach((button) => {
+    const target = document.querySelector(`#${button.dataset.collapseTarget}`);
+    if (!target) return;
+    target.classList.add("is-collapsed");
+    button.textContent = "Show";
+  });
+}
 
 async function loadFiles(files) {
   const readableFiles = files.filter((file) => {
