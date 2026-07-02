@@ -44,6 +44,7 @@ This tool is a private offline workbench for integration leads who need to revie
 - Technical and functional explanation assistant for users returning to code review after a long gap.
 - Redaction helper and issue register for safer communication and structured closure tracking.
 - Printable report view for manager, EA, ISG, vendor, or audit-style sharing.
+- Optional online research mode for generic references only, controlled by an explicit toggle.
 - Sample project and sample validation script.
 
 ## Recommended Next Improvements

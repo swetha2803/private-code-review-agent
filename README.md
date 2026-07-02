@@ -79,6 +79,7 @@ Integration lead features:
 - Technical and functional code explanations in simple English, plus strict review gates to separate blockers from normal improvement items.
 - Redaction helper for sensitive text and issue register CSV export with owner/status/ETA/RCA/retest/closure fields.
 - Printable report page for browser Print / Save as PDF.
+- Optional Online Research Mode, disabled by default, that opens only generic OWASP/CWE/security reference links and never sends source code, logs, file names, sessions, or reports.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 

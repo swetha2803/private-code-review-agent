@@ -129,6 +129,35 @@
       </div>
     </section>
 
+    <section class="online-research app-section no-print" aria-labelledby="onlineResearchTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="onlineResearchTitle">Online Research Mode</h2>
+          <p>Optional. Opens generic security/code-review references only when enabled.</p>
+        </div>
+        <div class="result-actions">
+          <label class="toggle-label">
+            <input id="onlineResearchToggle" type="checkbox" />
+            Enable online links
+          </label>
+          <button id="buildResearchLinksBtn" type="button" class="ghost-btn">
+            Build Links
+          </button>
+          <button type="button" class="collapse-btn" data-collapse-target="onlineResearchBody">Hide</button>
+        </div>
+      </div>
+      <div id="onlineResearchBody">
+        <div class="hint-strip">
+          <strong>Security rule:</strong>
+          This mode does not send code, file names, logs, sessions, or reports.
+          It only creates generic reference links such as OWASP, CWE, and secure coding searches.
+        </div>
+        <div id="researchLinksList" class="research-links">
+          Online links are disabled. Turn on the toggle only if your environment allows internet research.
+        </div>
+      </div>
+    </section>
+
     <section class="session-bar" aria-label="Session manager">
       <div>
         <h2>Session Manager</h2>

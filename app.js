@@ -15,6 +15,9 @@ const elements = {
   sessionInput: document.querySelector("#sessionInput"),
   exportTrackerCsvBtn: document.querySelector("#exportTrackerCsvBtn"),
   refreshAssistantBtn: document.querySelector("#refreshAssistantBtn"),
+  onlineResearchToggle: document.querySelector("#onlineResearchToggle"),
+  buildResearchLinksBtn: document.querySelector("#buildResearchLinksBtn"),
+  researchLinksList: document.querySelector("#researchLinksList"),
   explainCodeBtn: document.querySelector("#explainCodeBtn"),
   assistantSummary: document.querySelector("#assistantSummary"),
   assistantNextActions: document.querySelector("#assistantNextActions"),
@@ -506,6 +509,7 @@ elements.sessionInput.addEventListener("change", importSessionFile);
 elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
 elements.refreshAssistantBtn.addEventListener("click", renderAssistant);
 elements.explainCodeBtn.addEventListener("click", explainCode);
+elements.buildResearchLinksBtn.addEventListener("click", renderResearchLinks);
 
 ["dragenter", "dragover"].forEach((eventName) => {
   elements.dropzone.addEventListener(eventName, (event) => {
@@ -1348,6 +1352,58 @@ function renderAssistant() {
   elements.assistantFunctionalExplanation.textContent = advice.functionalExplanation;
   renderList(elements.assistantStrictGate, advice.strictGate);
   elements.assistantMailDraft.textContent = advice.mailDraft;
+}
+
+function renderResearchLinks() {
+  if (!elements.onlineResearchToggle.checked) {
+    elements.researchLinksList.textContent =
+      "Online links are disabled. Turn on the toggle only if your environment allows internet research.";
+    return;
+  }
+
+  const topics = buildResearchTopics();
+  if (!topics.length) {
+    elements.researchLinksList.innerHTML = `<div class="empty-state">Run a review first to build safe research links.</div>`;
+    return;
+  }
+
+  elements.researchLinksList.innerHTML = topics
+    .map(
+      (topic) =>
+        `<a href="${escapeHtml(topic.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(topic.label)}</a>`,
+    )
+    .join("");
+}
+
+function buildResearchTopics() {
+  const ids = [...new Set(state.findings.map((finding) => finding.id))].slice(0, 12);
+  const topics = ids.map((id) => ({
+    label: `Research: ${id}`,
+    url: `https://www.google.com/search?q=${encodeURIComponent(`${id} OWASP CWE secure coding`)}`,
+  }));
+
+  if (state.findings.some((finding) => finding.id.includes("webview"))) {
+    topics.push({
+      label: "OWASP Mobile WebView security",
+      url: "https://mas.owasp.org/MASTG/tests/",
+    });
+  }
+
+  if (state.findings.some((finding) => finding.id.includes("sql"))) {
+    topics.push({
+      label: "OWASP SQL Injection",
+      url: "https://owasp.org/www-community/attacks/SQL_Injection",
+    });
+  }
+
+  if (state.findings.some((finding) => finding.id.includes("secret"))) {
+    topics.push({
+      label: "OWASP Secrets Management Cheat Sheet",
+      url: "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+    });
+  }
+
+  return topics;
 }
 
 function explainCode() {
