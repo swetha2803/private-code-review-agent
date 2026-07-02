@@ -31,6 +31,7 @@
       <a href="#reviewPackTitle">Review Pack</a>
       <a href="#workbenchTitle">Workbench</a>
       <a href="#safetyTitle">Safety / Issues</a>
+      <a href="#reportTitle">Report</a>
       <a href="#signoffCenterTitle">EA / ISG</a>
       <a href="#lldCenterTitle">LLD Evidence</a>
       <a href="#privacyModelTitle">Privacy</a>
@@ -509,6 +510,26 @@
             <div id="issueRegisterTable" class="table-wrap"></div>
           </article>
         </div>
+      </div>
+    </section>
+
+    <section class="report-center app-section" aria-labelledby="reportTitle">
+      <div class="section-head no-print">
+        <div>
+          <h2 id="reportTitle">Printable Report</h2>
+          <p>Generate a clean report and use browser Print to save as PDF.</p>
+        </div>
+        <div class="result-actions">
+          <button id="generateReportBtn" type="button" class="primary-btn">Generate Report</button>
+          <button id="printReportBtn" type="button" class="ghost-btn">Print / Save PDF</button>
+          <button type="button" class="collapse-btn" data-collapse-target="reportBody">Hide</button>
+        </div>
+      </div>
+      <div id="reportBody">
+        <article id="printableReport" class="printable-report">
+          <h2>Review Report</h2>
+          <p>Generate the report after running review.</p>
+        </article>
       </div>
     </section>
 

@@ -91,6 +91,9 @@ const elements = {
   isgMailOutput: document.querySelector("#isgMailOutput"),
   generateLldBtn: document.querySelector("#generateLldBtn"),
   redactBtn: document.querySelector("#redactBtn"),
+  generateReportBtn: document.querySelector("#generateReportBtn"),
+  printReportBtn: document.querySelector("#printReportBtn"),
+  printableReport: document.querySelector("#printableReport"),
   buildIssuesBtn: document.querySelector("#buildIssuesBtn"),
   exportIssuesCsvBtn: document.querySelector("#exportIssuesCsvBtn"),
   redactionInput: document.querySelector("#redactionInput"),
@@ -552,6 +555,11 @@ elements.exportLldBtn.addEventListener("click", exportLldReview);
 elements.redactBtn.addEventListener("click", redactText);
 elements.buildIssuesBtn.addEventListener("click", renderIssueRegister);
 elements.exportIssuesCsvBtn.addEventListener("click", exportIssuesCsv);
+elements.generateReportBtn.addEventListener("click", renderPrintableReport);
+elements.printReportBtn.addEventListener("click", () => {
+  renderPrintableReport();
+  window.print();
+});
 
 elements.filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -575,6 +583,7 @@ renderReviewPack();
 renderAssistant();
 renderWorkbench();
 renderIssueRegister();
+renderPrintableReport();
 renderSignoffCenter();
 renderLldCenter();
 
@@ -652,6 +661,7 @@ function runReview() {
   renderReviewPack();
   renderAssistant();
   renderIssueRegister();
+  renderPrintableReport();
   return;
   }
 
@@ -665,6 +675,7 @@ function runReview() {
   renderReviewPack();
   renderAssistant();
   renderIssueRegister();
+  renderPrintableReport();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -964,6 +975,7 @@ async function importScannerReport(event) {
   renderReviewPack();
   renderAssistant();
   renderIssueRegister();
+  renderPrintableReport();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -2210,6 +2222,88 @@ function exportIssuesCsv() {
   downloadText(csv, `issue-register-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv");
 }
 
+function renderPrintableReport() {
+  const pack = state.reviewPack || buildReviewPack(state.findings, currentSources());
+  const workbench = buildWorkbenchPack();
+  const signoff = buildSignoffPack();
+  const lld = buildLldReview();
+  const issues = buildIssueRegister();
+  const assistant = buildAssistantAdvice();
+
+  elements.printableReport.innerHTML = `
+    <h2>${escapeHtml(workbench.devTitle)} - Review Report</h2>
+    <p><strong>Generated:</strong> ${escapeHtml(new Date().toISOString())}</p>
+    <p><strong>Application:</strong> ${escapeHtml(workbench.appName)}</p>
+    <p><strong>Platform:</strong> ${escapeHtml(workbench.platform)} | <strong>Environment:</strong> ${escapeHtml(workbench.environment)}</p>
+    <p><strong>Decision:</strong> ${escapeHtml(pack.decision || "Not reviewed")} | <strong>Risk Score:</strong> ${escapeHtml(pack.riskScore || 0)}</p>
+
+    <h3>Executive Summary</h3>
+    <ul>${assistant.summary.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+
+    <h3>Strict Review Gate</h3>
+    <ul>${assistant.strictGate.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+
+    <h3>Technical Explanation</h3>
+    <pre>${escapeHtml(assistant.technicalExplanation)}</pre>
+
+    <h3>Functional Explanation</h3>
+    <pre>${escapeHtml(assistant.functionalExplanation)}</pre>
+
+    <h3>Findings</h3>
+    ${renderReportTable(
+      ["Severity", "Finding", "Source", "Fix"],
+      state.findings.map((finding) => [
+        finding.severity.toUpperCase(),
+        finding.title,
+        `${finding.file}:${finding.line}`,
+        finding.fix,
+      ]),
+      "No findings captured.",
+    )}
+
+    <h3>API Inventory</h3>
+    ${renderReportTable(
+      ["Method", "Endpoint", "Risk", "Review Focus"],
+      (pack.apiReview || []).map((api) => [api.method, api.endpoint, api.risk, api.reviewFocus]),
+      "No APIs detected.",
+    )}
+
+    <h3>Issue Register</h3>
+    ${renderReportTable(
+      ["Issue ID", "Severity", "Title", "Status", "Action"],
+      issues.map((issue) => [issue.issueId, issue.severity, issue.title, issue.status, issue.action]),
+      "No issues generated.",
+    )}
+
+    <h3>EA / ISG Readiness</h3>
+    <p><strong>EA Impact:</strong> ${escapeHtml(signoff.eaImpact)} | <strong>ISG Decision:</strong> ${escapeHtml(signoff.decision)} | <strong>ISG Score:</strong> ${escapeHtml(signoff.score)}</p>
+    <ul>${signoff.gaps.length ? signoff.gaps.map((gap) => `<li>${escapeHtml(gap)}</li>`).join("") : "<li>No ISG gaps captured.</li>"}</ul>
+
+    <h3>LLD / Evidence Gaps</h3>
+    <ul>${lld.gaps.length ? lld.gaps.map((gap) => `<li>${escapeHtml(gap)}</li>`).join("") : "<li>No LLD gaps captured.</li>"}</ul>
+
+    <h3>Next Actions</h3>
+    <ul>${assistant.nextActions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+  `;
+}
+
+function renderReportTable(headers, rows, emptyText) {
+  if (!rows.length) return `<p>${escapeHtml(emptyText)}</p>`;
+  return `
+    <table>
+      <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) =>
+              `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
 function collectSessionData() {
   return {
     version: 1,
@@ -2265,6 +2359,7 @@ function applySessionData(session) {
   renderReviewPack();
   renderAssistant();
   renderIssueRegister();
+  renderPrintableReport();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -2557,6 +2652,7 @@ function clearAll() {
   renderReviewPack();
   renderAssistant();
   renderIssueRegister();
+  renderPrintableReport();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();

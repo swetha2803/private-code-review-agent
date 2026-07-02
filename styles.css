@@ -123,6 +123,7 @@ label,
 .signoff-center,
 .lld-center,
 .safety-center,
+.report-center,
 .local-note {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -562,6 +563,48 @@ button:disabled {
   padding: 18px;
 }
 
+.report-center {
+  margin: 0 32px 20px;
+  padding: 18px;
+}
+
+.printable-report {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px;
+  background: #ffffff;
+}
+
+.printable-report h2,
+.printable-report h3 {
+  margin: 0 0 10px;
+}
+
+.printable-report h3 {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.printable-report table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.printable-report th,
+.printable-report td {
+  border: 1px solid var(--line);
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.printable-report th {
+  background: #eef3f5;
+}
+
 .table-wrap {
   overflow: auto;
 }
@@ -790,6 +833,7 @@ button:disabled {
   .signoff-center,
   .lld-center,
   .safety-center,
+  .report-center,
   .local-note {
     margin: 0 16px 20px;
   }
@@ -813,5 +857,39 @@ button:disabled {
 
   .local-note {
     margin: 0 16px 20px;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .topbar,
+  .app-nav,
+  .session-bar,
+  .quick-start,
+  .assistant-panel,
+  .layout,
+  .review-pack,
+  .workbench,
+  .safety-center,
+  .signoff-center,
+  .lld-center,
+  .local-note,
+  .no-print {
+    display: none !important;
+  }
+
+  .report-center {
+    display: block !important;
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+
+  .printable-report {
+    border: 0;
+    padding: 0;
   }
 }
