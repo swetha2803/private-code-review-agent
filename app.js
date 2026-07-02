@@ -20,6 +20,9 @@ const elements = {
   assistantVendorQuestions: document.querySelector("#assistantVendorQuestions"),
   assistantInternalQuestions: document.querySelector("#assistantInternalQuestions"),
   assistantSimpleExplanation: document.querySelector("#assistantSimpleExplanation"),
+  assistantTechnicalExplanation: document.querySelector("#assistantTechnicalExplanation"),
+  assistantFunctionalExplanation: document.querySelector("#assistantFunctionalExplanation"),
+  assistantStrictGate: document.querySelector("#assistantStrictGate"),
   assistantMailDraft: document.querySelector("#assistantMailDraft"),
   dropzone: document.querySelector("#dropzone"),
   zipInput: document.querySelector("#zipInput"),
@@ -1271,6 +1274,10 @@ function buildAssistantAdvice() {
     "Do not accept verbal confidence alone. Ask for evidence: pipeline result, scanner report, config path, test result, and signoff.",
   ].join("\n");
 
+  const technicalExplanation = buildCodeTechnicalExplanation(sources, pack, state.findings);
+  const functionalExplanation = buildCodeFunctionalExplanation(sources, pack, state.findings);
+  const strictGate = buildStrictReviewGate(pack, state.findings);
+
   const mailDraft = [
     `Subject: Review clarification and evidence required - ${elements.wbDevTitle.value || "Development Review"}`,
     "",
@@ -1296,6 +1303,9 @@ function buildAssistantAdvice() {
     vendorQuestions,
     internalQuestions,
     simpleExplanation,
+    technicalExplanation,
+    functionalExplanation,
+    strictGate,
     mailDraft,
   };
 }
@@ -1307,7 +1317,122 @@ function renderAssistant() {
   renderList(elements.assistantVendorQuestions, advice.vendorQuestions);
   renderList(elements.assistantInternalQuestions, advice.internalQuestions);
   elements.assistantSimpleExplanation.textContent = advice.simpleExplanation;
+  elements.assistantTechnicalExplanation.textContent = advice.technicalExplanation;
+  elements.assistantFunctionalExplanation.textContent = advice.functionalExplanation;
+  renderList(elements.assistantStrictGate, advice.strictGate);
   elements.assistantMailDraft.textContent = advice.mailDraft;
+}
+
+function buildCodeTechnicalExplanation(sources, pack, findings) {
+  if (!sources.length) {
+    return "No source loaded yet. Upload a ZIP/folder/files or paste code, then run review.";
+  }
+
+  const sourceText = sources.map((source) => source.content).join("\n");
+  const classes = [...sourceText.matchAll(/\b(class|interface|enum)\s+([A-Za-z0-9_]+)/g)]
+    .map((match) => `${match[1]} ${match[2]}`)
+    .slice(0, 20);
+  const methods = [...sourceText.matchAll(/\b(public|private|protected|async|function)\s+[A-Za-z0-9_<>,\[\]\s]+\s+([A-Za-z0-9_]+)\s*\(/g)]
+    .map((match) => match[2])
+    .slice(0, 25);
+  const apis = pack.apiReview || [];
+  const fileSummary = summarizeSourceFiles(sources);
+  const groupedFindings = groupFindingsById(findings);
+
+  return [
+    `Files reviewed: ${sources.length}`,
+    `Detected file areas: ${fileSummary.join(", ") || "general source files"}`,
+    classes.length ? `Main classes/interfaces detected: ${classes.join(", ")}` : "No class/interface names detected from current input.",
+    methods.length ? `Important methods/functions detected: ${methods.join(", ")}` : "No method/function names detected from current input.",
+    apis.length
+      ? `API calls/endpoints detected: ${apis.map((api) => `${api.method} ${api.endpoint}`).slice(0, 12).join("; ")}`
+      : "No API endpoint pattern detected. If the change uses APIs, ask for API contracts manually.",
+    groupedFindings.length
+      ? `Technical review points: ${groupedFindings.map((item) => `${item.id} (${item.count})`).slice(0, 12).join(", ")}`
+      : "No configured technical findings detected yet.",
+    "Read this technically as: identify entry point -> validate input -> call service/API -> handle success/failure -> protect data -> prove tests/evidence.",
+  ].join("\n");
+}
+
+function buildCodeFunctionalExplanation(sources, pack, findings) {
+  if (!sources.length) {
+    return "No source loaded yet. After loading code, this area explains the likely user/business flow in simple English.";
+  }
+
+  const apis = pack.apiReview || [];
+  const highApis = apis.filter((api) => api.risk !== "low");
+  const hasLogs = pack.logAnalysis && pack.logAnalysis.totalFindings > 0;
+  const hasMoneyOrAccount = /transfer|payment|beneficiary|account|statement|balance|card|otp|login/i.test(
+    sources.map((source) => `${source.name}\n${source.content}`).join("\n"),
+  );
+
+  return [
+    "Simple functional reading:",
+    hasMoneyOrAccount
+      ? "This appears to touch sensitive banking-style flow such as login, OTP, account, beneficiary, statement, card, payment, or transfer. Treat it as high attention."
+      : "This appears to be a general application flow. Still confirm inputs, outputs, errors, and ownership.",
+    highApis.length
+      ? `Business-impacting APIs found: ${highApis.map((api) => `${api.method} ${api.endpoint}`).slice(0, 10).join("; ")}`
+      : "No high-risk API names detected.",
+    findings.length
+      ? "There are review findings. Ask what user/business behavior is affected and how the fix is tested."
+      : "No findings yet from configured rules. Still request FS, LLD, test evidence, and owner confirmation.",
+    hasLogs
+      ? "Logs have issues. Confirm whether the user saw failures, which API failed, and whether sensitive data was exposed."
+      : "No log issue detected or logs were not provided.",
+    "Ask functionally: What is the user trying to do? What should happen? What can fail? What message appears? Who owns the fix? What evidence proves closure?",
+  ].join("\n");
+}
+
+function buildStrictReviewGate(pack, findings) {
+  const blockers = findings.filter((finding) => ["critical", "high"].includes(finding.severity));
+  const apis = pack.apiReview || [];
+  const gates = [
+    blockers.length
+      ? `BLOCK: ${blockers.length} critical/high finding(s) must be fixed or formally risk accepted.`
+      : "PASS: No critical/high finding from current configured rules.",
+    "Do not accept 'works on my machine' as closure evidence.",
+    "Require CI/SIT/UAT or approved environment evidence.",
+    "Require SAST/SCA/secret scan evidence for code delivery.",
+    "Require API contract and owner confirmation for every integration/API change.",
+    "Require timeout/retry/error-handling proof for API/client calls.",
+    "Require ISG/EA signoff evidence where security, architecture, PII, integration, or release impact exists.",
+  ];
+
+  if (apis.length) {
+    gates.push(`Review all ${apis.length} detected API(s) for auth, authorization, validation, timeout, retry, logging, and error messages.`);
+  }
+
+  if (pack.logAnalysis && pack.logAnalysis.totalFindings) {
+    gates.push(`Resolve or explain ${pack.logAnalysis.totalFindings} log finding(s), especially secrets/PII/errors/timeouts.`);
+  }
+
+  return uniqueItems(gates);
+}
+
+function summarizeSourceFiles(sources) {
+  const areas = new Set();
+  sources.forEach((source) => {
+    const name = source.name.toLowerCase();
+    if (/\.(java|kt|swift)$/.test(name)) areas.add("mobile/backend typed code");
+    if (/\.(js|jsx|ts|tsx)$/.test(name)) areas.add("JavaScript/TypeScript");
+    if (/\.(json|ya?ml|properties|gradle|xml|env)$/.test(name)) areas.add("configuration");
+    if (/android|ios|mobile|react-native/.test(name)) areas.add("mobile");
+    if (/api|service|controller|repository/.test(name)) areas.add("service/API");
+    if (/test|spec|__tests__/.test(name)) areas.add("tests");
+    if (/\.log$/.test(name)) areas.add("logs");
+  });
+  return [...areas];
+}
+
+function groupFindingsById(findings) {
+  const map = new Map();
+  findings.forEach((finding) => {
+    const item = map.get(finding.id) || { id: finding.id, count: 0 };
+    item.count += 1;
+    map.set(finding.id, item);
+  });
+  return [...map.values()].sort((a, b) => b.count - a.count);
 }
 
 function renderList(target, items) {
