@@ -68,14 +68,14 @@ Integration lead features:
 - Sanitized log analyzer for secrets, PII, stack traces, auth failures, and timeout/integration instability.
 - Copy-ready vendor message, API team message, and log follow-up message.
 - Meeting agenda/status summary in generated reports.
-- Offline browser workbench for FS review, tracker row generation, CR readiness, EA/ISG signoff checklist, status mail, issue fixing mail, and Gamma-ready deck outline.
-- EA template generator with architecture pattern, data flow, dependencies, API summary, NFRs, deployment, and rollback sections.
-- ISG pre-assessment with readiness score, missing evidence, open gaps, security exceptions, and submission mail.
+- Offline browser workbench for FS review, tracker row generation, CR readiness, EA architecture pack, ISG security validation, status note, issue fixing note, and Gamma-ready deck outline.
+- EA architecture document generator with architecture pattern, data flow, dependencies, API summary, NFRs, deployment, and rollback sections for EA discussion and approval.
+- ISG API/security validation with API inventory, auth/authZ, abuse controls, SAST/SCA, secret scan, evidence gaps, and security exceptions.
 - Application flow explanation for uploaded/pasted/folder-scanned source.
 - LLD and walkthrough validation for flow coverage, API contracts, timeout/retry, error handling, security controls, data handling, CI/CD, deployment, and claim-vs-evidence review.
-- Main review type dropdown for Full code review, Code review using LLD, ISG security review, Log analyzer only, and EA signoff / architecture review.
+- Main review type dropdown for Full code review, Code review using LLD, ISG security review, Log analyzer only, and EA architecture document.
 - Code review using LLD compares uploaded code/APIs/auth/storage/logging/timeout behavior against pasted LLD notes and creates actionable code-vs-LLD findings.
-- EA signoff can locally read sanitized TXT/MD/DOCX/PPTX template samples, compare required architecture sections, and generate requested document changes without uploading the document.
+- EA architecture review can locally read sanitized TXT/MD/DOCX/PPTX document samples, compare required architecture sections, and generate requested document changes without uploading the document.
 - Review-flow profiles: Generic, Mobile, Backend, Frontend, Integration, and Full stack. Mobile adds focused checks for auth management, API connection config, web-client timeout config, PMD/code quality, build/publish pipeline, approved environment validation, and repo/access evidence.
 - Local session save/load, session JSON export/import, and tracker CSV export for Excel/manual trackers.
 - Offline review assistant that explains findings in plain English, suggests next actions, asks vendor/internal-team questions, and drafts a review clarification mail without using any external AI service.

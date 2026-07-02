@@ -746,7 +746,7 @@ function runReview() {
     renderAssistant();
     renderSignoffCenter();
     renderPrintableReport();
-    elements.summaryText.textContent = "EA architecture/signoff review generated from workbench, EA fields, and uploaded template.";
+    elements.summaryText.textContent = "EA architecture document pack generated from workbench, EA fields, and uploaded template.";
     document.querySelector("#signoffCenterTitle").scrollIntoView({ behavior: "smooth", block: "start" });
     return;
   }
@@ -1373,9 +1373,9 @@ function buildAssistantAdvice() {
     blockers.length && "Do not close/sign off until critical/high findings are fixed or formally risk accepted.",
     medium.length && "Review medium findings with vendor and decide fix, waiver, or evidence requirement.",
     "Fill Application, Development title, POCs, FS summary, and open issues in the Workbench.",
-    "Select the correct Review Flow profile in LLD Evidence: Mobile, Backend, Frontend, Integration, Full stack, or Generic.",
+    "Select the correct Review Flow profile in LLD Validation: Mobile, Backend, Frontend, Integration, Full stack, or Generic.",
     "Paste sanitized LLD/walkthrough notes and developer claims, then validate LLD.",
-    "Fill EA/ISG evidence and generate signoff pack before sending to EA/ISG.",
+    "Fill EA architecture inputs and ISG security evidence, then generate the pack.",
     "Export Tracker CSV and session JSON before closing the review.",
   ]);
 
@@ -1390,8 +1390,8 @@ function buildAssistantAdvice() {
 
   const internalQuestions = uniqueItems([
     "DevOps: Is the build/publish pipeline approved, traceable, and quality-gated?",
-    "ISG: Are SAST, SCA, secret scan, TLS/storage/logging controls, and exceptions acceptable?",
-    "EA: Is architecture impact, data flow, dependency map, NFR, and rollback approach acceptable?",
+    "ISG: Are APIs, auth, authorization, TLS, storage, logging, SAST, SCA, and exceptions acceptable?",
+    "EA: Is the architecture document ready for review discussion and approval?",
     "Business/UAT: Does implementation match FS and are open issues accepted?",
     "Operations: Are monitoring, alerts, support ownership, and escalation path defined?",
   ]);
@@ -1598,7 +1598,7 @@ function buildStrictReviewGate(pack, findings) {
     "Require SAST/SCA/secret scan evidence for code delivery.",
     "Require API contract and owner confirmation for every integration/API change.",
     "Require timeout/retry/error-handling proof for API/client calls.",
-    "Require ISG/EA signoff evidence where security, architecture, PII, integration, or release impact exists.",
+    "Require ISG security validation and EA architecture document evidence where security, architecture, PII, integration, or release impact exists.",
   ];
 
   if (apis.length) {
@@ -1720,8 +1720,8 @@ function buildWorkbenchPack() {
   ];
 
   const signoff = [
-    "EA signoff: architecture impact, integration pattern, data flow, and NFR impact reviewed.",
-    "ISG signoff: SAST/SCA/secret scan, security exceptions, and remediation evidence reviewed.",
+    "EA architecture document: architecture impact, integration pattern, data flow, NFRs, deployment, rollback, and dependencies reviewed.",
+    "ISG security validation: API security, SAST/SCA/secret scan, security exceptions, and remediation evidence reviewed.",
     "Business signoff: FS scope, UAT evidence, and open issue acceptance reviewed.",
     "Operations signoff: monitoring, alerts, support SOP, and escalation matrix reviewed.",
     "Release signoff: CR, deployment plan, rollback plan, and implementation window reviewed.",
@@ -1878,14 +1878,21 @@ function buildSignoffPack() {
     ["SAST report", /sast|sonar|semgrep|checkmarx|fortify|codeql/.test(evidenceLower)],
     ["SCA/dependency report", /sca|dependency|cve|snyk|dependency-check/.test(evidenceLower)],
     ["Secret scan", /secret|gitleaks|credential/.test(evidenceLower)],
-    ["API security evidence", /api|auth|authorization|rate|replay|idempotency/.test(evidenceLower)],
+    ["API authentication validation", /api|auth|authentication|token|session|oauth|jwt/.test(evidenceLower)],
+    ["API authorization validation", /authorization|authz|role|permission|entitlement|access control/.test(evidenceLower)],
+    ["API abuse controls", /rate|replay|idempotency|duplicate|brute|lockout|throttle/.test(evidenceLower)],
+    ["API input/error validation", /input|validation|schema|error|exception|saniti[sz]e/.test(evidenceLower)],
     ["TLS/certificate validation", /tls|ssl|certificate|pinning|mitm/.test(evidenceLower)],
     ["Secure storage evidence", /secure storage|keychain|keystore|encrypted storage/.test(evidenceLower)],
     ["Logging redaction evidence", /log|mask|redact|telemetry/.test(evidenceLower)],
     ["Unit/SIT/UAT evidence", /unit|sit|uat|test evidence|coverage/.test(evidenceLower)],
   ];
+  const isgApiValidation = buildIsgApiValidation(reviewPack, evidenceLower);
 
   const gaps = evidenceChecks.filter(([, passed]) => !passed).map(([name]) => `${name} not captured.`);
+  isgApiValidation
+    .filter((item) => item.status !== "Covered")
+    .forEach((item) => gaps.push(`${item.name} not captured for API security validation.`));
   if (blockerCount > 0) gaps.unshift(`${blockerCount} critical/high code or log finding(s) must be resolved or risk accepted.`);
   if (internetFacing === "Yes") gaps.push("Internet-facing impact requires explicit threat model, WAF/rate-limit, and VA/PT evidence.");
   if (piiInvolved === "Yes" && !/privacy|dpia|mask|retention|consent/i.test(evidenceText)) gaps.push("PII/financial data requires privacy, masking, retention, and logging evidence.");
@@ -1916,7 +1923,7 @@ function buildSignoffPack() {
   ];
 
   const eaTemplate = [
-    `EA Review Template - ${devTitle}`,
+    `EA Architecture Document - ${devTitle}`,
     "",
     `Application/Module: ${appName}`,
     `Architecture Pattern: ${pattern}`,
@@ -1933,7 +1940,7 @@ function buildSignoffPack() {
     `Pattern: ${pattern}`,
     `Impact: ${eaImpact}`,
     "",
-    "Uploaded EA Template / Sample Review",
+    "Uploaded EA Architecture Sample Review",
     eaDocReview,
     "",
     "3. Data Flow",
@@ -1949,7 +1956,7 @@ function buildSignoffPack() {
     "- Availability, performance, timeout, retry, monitoring, alerts, and support ownership to be confirmed.",
     "",
     "7. Security / Privacy",
-    `- ISG readiness: ${decision}`,
+    `- ISG security validation: ${decision}`,
     `- Open gaps: ${gaps.length}`,
     `- Exceptions: ${exceptions}`,
     "",
@@ -1958,11 +1965,11 @@ function buildSignoffPack() {
   ].join("\n");
 
   const eaMail = [
-    `Subject: EA Signoff Request - ${devTitle} - ${appName}`,
+    `Subject: EA Architecture Review Discussion - ${devTitle} - ${appName}`,
     "",
     "Hi EA Team,",
     "",
-    "Please review the architecture/signoff details for the below change.",
+    "Please review the architecture document for discussion and approval.",
     "",
     `Application/Module: ${appName}`,
     `Change: ${devTitle}`,
@@ -1971,24 +1978,24 @@ function buildSignoffPack() {
     `Architecture Impact: ${eaImpact}`,
     "",
     "Attached/Included:",
-    "- EA review template",
+    "- EA architecture document",
     "- Data flow",
     "- API/dependency summary",
     "- NFR/operations notes",
-    "- Security/ISG readiness summary",
+    "- ISG security validation summary",
     "- EA document changes requested",
     "",
     "Regards,",
   ].join("\n");
 
   const isgMail = [
-    `Subject: ISG Pre-Assessment / Signoff Request - ${devTitle} - ${appName}`,
+    `Subject: ISG API Security Validation - ${devTitle} - ${appName}`,
     "",
     "Hi ISG Team,",
     "",
-    `We completed a pre-assessment before formal ISG submission. Current readiness: ${decision}, score: ${score}.`,
+    `We completed API/security validation before ISG review. Current status: ${decision}, score: ${score}.`,
     "",
-    "Open Gaps:",
+    "Security Gaps:",
     ...bulletLines(gaps.length ? gaps : ["No open pre-assessment gaps captured."]),
     "",
     "Evidence Available:",
@@ -2007,6 +2014,7 @@ function buildSignoffPack() {
     gaps,
     eaImpact,
     evidenceChecks: evidenceChecks.map(([name, passed]) => ({ name, status: passed ? "Available" : "Missing" })),
+    isgApiValidation,
     evidenceRequired,
     eaChecklist,
     eaTemplate,
@@ -2057,6 +2065,38 @@ function buildEaDocumentReview(workbench, reviewPack) {
   ].join("\n");
 }
 
+function buildIsgApiValidation(reviewPack, evidenceLower) {
+  const apis = reviewPack.apiReview || [];
+  const highRiskApis = apis.filter((api) => api.risk === "high");
+  const apiCountText = apis.length ? `${apis.length} detected API(s)` : "No APIs detected from code";
+  return [
+    {
+      name: `API inventory (${apiCountText})`,
+      status: apis.length ? "Covered" : "Manual review",
+    },
+    {
+      name: "High-risk API focus",
+      status: highRiskApis.length ? `${highRiskApis.length} high-risk API(s)` : "Covered",
+    },
+    {
+      name: "Authentication per API",
+      status: /auth|authentication|token|session|oauth|jwt/.test(evidenceLower) ? "Covered" : "Missing",
+    },
+    {
+      name: "Authorization / customer ownership per API",
+      status: /authorization|authz|role|permission|entitlement|ownership|access control/.test(evidenceLower) ? "Covered" : "Missing",
+    },
+    {
+      name: "Input validation and error handling",
+      status: /input|validation|schema|error|exception|saniti[sz]e/.test(evidenceLower) ? "Covered" : "Missing",
+    },
+    {
+      name: "Replay, duplicate, rate-limit, idempotency",
+      status: /rate|replay|idempotency|duplicate|brute|lockout|throttle/.test(evidenceLower) ? "Covered" : "Missing",
+    },
+  ];
+}
+
 function renderSignoffCenter() {
   const pack = buildSignoffPack();
   elements.isgDecision.textContent = pack.decision;
@@ -2066,7 +2106,10 @@ function renderSignoffCenter() {
   elements.eaTemplateOutput.textContent = pack.eaTemplate;
   elements.eaDocReviewOutput.textContent = pack.eaDocReview;
   renderList(elements.eaChecklistOutput, pack.eaChecklist);
-  renderList(elements.isgAssessmentOutput, pack.evidenceChecks.map((item) => `${item.name}: ${item.status}`));
+  renderList(elements.isgAssessmentOutput, [
+    ...pack.isgApiValidation.map((item) => `${item.name}: ${item.status}`),
+    ...pack.evidenceChecks.map((item) => `${item.name}: ${item.status}`),
+  ]);
   renderList(elements.isgGapsOutput, pack.gaps.length ? pack.gaps : ["No gaps captured in pre-assessment."]);
   renderList(elements.isgEvidenceOutput, pack.evidenceRequired);
   elements.eaMailOutput.textContent = pack.eaMail;
@@ -2110,7 +2153,7 @@ function buildLldComparisonFindings(sources, pack) {
       "LLD not provided for code comparison",
       "high",
       "Code review using LLD requires the LLD or walkthrough notes to prove the implementation matches the design.",
-      "Paste sanitized LLD or flow notes in LLD Evidence, then rerun Code review using LLD.",
+      "Paste sanitized LLD or flow notes in LLD Validation, then rerun Code review using LLD.",
     );
     return findings;
   }
@@ -2140,7 +2183,7 @@ function buildIsgSecurityFindings(signoffPack) {
     title: "ISG security evidence gap",
     severity: /critical\/high|internet-facing|pii|financial|exception/i.test(gap) ? "high" : "medium",
     description: gap,
-    fix: "Provide approved security evidence or documented risk acceptance before ISG signoff.",
+    fix: "Provide approved security evidence or documented risk acceptance before ISG security approval.",
     file: "ISG pre-assessment",
     line: 1,
     snippet: gap,
@@ -2544,8 +2587,8 @@ function renderPrintableReport() {
       "No issues generated.",
     )}
 
-    <h3>EA / ISG Readiness</h3>
-    <p><strong>EA Impact:</strong> ${escapeHtml(signoff.eaImpact)} | <strong>ISG Decision:</strong> ${escapeHtml(signoff.decision)} | <strong>ISG Score:</strong> ${escapeHtml(signoff.score)}</p>
+    <h3>EA Architecture / ISG Security</h3>
+    <p><strong>EA Review:</strong> ${escapeHtml(signoff.eaImpact)} | <strong>ISG Security:</strong> ${escapeHtml(signoff.decision)} | <strong>ISG Score:</strong> ${escapeHtml(signoff.score)}</p>
     <ul>${signoff.gaps.length ? signoff.gaps.map((gap) => `<li>${escapeHtml(gap)}</li>`).join("") : "<li>No ISG gaps captured.</li>"}</ul>
 
     <h3>LLD / Evidence Gaps</h3>

@@ -50,11 +50,11 @@ Recommended checks:
 2. Upload a folder using the file picker.
 3. Paste sanitized logs and confirm log findings appear.
 4. Fill Integration Lead Workbench fields and generate work pack.
-5. Fill EA/ISG fields and generate signoff pack.
+5. Fill EA architecture and ISG security fields and generate pack.
 6. Fill LLD/claim notes and validate LLD.
 7. In Source, choose `Code review using LLD`, paste code and LLD notes, then confirm code-vs-LLD findings appear when coverage is missing.
 8. Choose `ISG security review` and confirm ISG evidence gaps appear as security findings.
-9. Upload a sanitized `.txt`, `.docx`, or `.pptx` EA sample in EA/ISG and confirm document change recommendations are generated locally.
+9. Upload a sanitized `.txt`, `.docx`, or `.pptx` EA architecture sample and confirm document change recommendations are generated locally.
 7. Save local session.
 8. Load latest session.
 9. Export session JSON.

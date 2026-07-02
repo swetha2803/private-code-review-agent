@@ -19,7 +19,7 @@
     <header class="topbar">
       <div>
         <h1>Integration Review Command Center</h1>
-        <p>Private offline reviewer for code, logs, LLD, EA, ISG, and mails.</p>
+        <p>Private offline reviewer for code, APIs, logs, LLD, EA, and ISG.</p>
       </div>
       <div class="status-pill" id="privacyStatus">Offline-ready</div>
     </header>
@@ -33,7 +33,7 @@
       <a href="#safetyTitle">Issues</a>
       <a href="#reportTitle">Report</a>
       <a href="#signoffCenterTitle">EA / ISG</a>
-      <a href="#lldCenterTitle">LLD Evidence</a>
+      <a href="#lldCenterTitle">LLD Validation</a>
       <a href="#privacyModelTitle">Privacy</a>
     </nav>
 
@@ -65,7 +65,7 @@
           <div>
             <span>4</span>
             <strong>Export</strong>
-            <p>Download mails, tracker, packs, or report.</p>
+            <p>Download tracker, packs, or report.</p>
           </div>
         </div>
         <div class="hint-strip">
@@ -239,7 +239,7 @@
                 <option value="lld">Code review using LLD</option>
                 <option value="isg">ISG security review</option>
                 <option value="logs">Log analyzer only</option>
-                <option value="ea">EA signoff / architecture review</option>
+                <option value="ea">EA architecture document</option>
               </select>
             </label>
             <label>
@@ -559,15 +559,15 @@
     <section class="signoff-center app-section" aria-labelledby="signoffCenterTitle">
       <div class="section-head">
         <div>
-          <h2 id="signoffCenterTitle">EA / ISG</h2>
+          <h2 id="signoffCenterTitle">EA Architecture / ISG Security</h2>
         </div>
         <div class="result-actions">
           <button id="generateSignoffBtn" type="button" class="primary-btn">
-            Generate Signoff Pack
+            Generate Pack
           </button>
           <button type="button" class="collapse-btn" data-collapse-target="signoffBody" data-start-collapsed="true">Minimize</button>
           <button id="exportSignoffBtn" type="button" class="ghost-btn" disabled>
-            Export Signoff Pack
+            Export Pack
           </button>
         </div>
       </div>
@@ -617,7 +617,7 @@
           <textarea id="eaDependencies" placeholder="Systems, APIs, queues, databases, teams, certificates, firewall, scheduler, third-party..."></textarea>
         </label>
         <label class="wide-field">
-          ISG Evidence Available
+          ISG Security Evidence
           <textarea id="isgEvidence" placeholder="SAST, SCA, secret scan, API security, TLS/pinning, secure storage, log masking, VA/PT, risk acceptance..."></textarea>
         </label>
         <label class="wide-field">
@@ -625,12 +625,12 @@
           <textarea id="securityExceptions" placeholder="Known exceptions, compensating controls, expiry date, approver, owner..."></textarea>
         </label>
         <label class="wide-field">
-          EA Sample Template / Document
+          EA Architecture Document
           <input id="eaDocInput" type="file" accept=".txt,.md,.docx,.pptx" />
           <small id="eaDocSummary">Optional sanitized TXT, DOCX, or PPTX.</small>
         </label>
         <label class="wide-field">
-          Requested EA Document Changes
+          EA Document Changes
           <textarea id="eaDocChangeRequest" placeholder="Example: add data flow diagram, update API list, add NFR, add rollback section, make mail formal..."></textarea>
         </label>
       </div>
@@ -638,7 +638,7 @@
       <div class="gate-strip">
         <div>
           <span id="isgDecision">Not assessed</span>
-          <small>ISG readiness</small>
+          <small>ISG security</small>
         </div>
         <div>
           <span id="isgScore">0</span>
@@ -650,13 +650,13 @@
         </div>
         <div>
           <span id="eaImpact">Pending</span>
-          <small>EA impact</small>
+          <small>EA review</small>
         </div>
       </div>
 
       <div class="pack-grid">
         <article class="pack-card message-card">
-          <h3>EA Template</h3>
+          <h3>EA Architecture Document</h3>
           <pre id="eaTemplateOutput"></pre>
         </article>
         <article class="pack-card message-card">
@@ -664,27 +664,27 @@
           <pre id="eaDocReviewOutput"></pre>
         </article>
         <article class="pack-card">
-          <h3>EA Review Checklist</h3>
+          <h3>EA Document Checklist</h3>
           <ul id="eaChecklistOutput"></ul>
         </article>
         <article class="pack-card">
-          <h3>ISG Pre-Assessment</h3>
+          <h3>ISG API Security Validation</h3>
           <ul id="isgAssessmentOutput"></ul>
         </article>
         <article class="pack-card">
-          <h3>ISG Gaps</h3>
+          <h3>ISG Security Gaps</h3>
           <ul id="isgGapsOutput"></ul>
         </article>
         <article class="pack-card">
-          <h3>Evidence Required</h3>
+          <h3>Security Evidence Required</h3>
           <ul id="isgEvidenceOutput"></ul>
         </article>
         <article class="pack-card message-card">
-          <h3>EA Signoff Mail</h3>
+          <h3>EA Discussion Note</h3>
           <pre id="eaMailOutput"></pre>
         </article>
         <article class="pack-card message-card">
-          <h3>ISG Submission Mail</h3>
+          <h3>ISG Security Summary</h3>
           <pre id="isgMailOutput"></pre>
         </article>
       </div>
@@ -694,7 +694,7 @@
     <section class="lld-center app-section" aria-labelledby="lldCenterTitle">
       <div class="section-head">
         <div>
-          <h2 id="lldCenterTitle">LLD Check</h2>
+          <h2 id="lldCenterTitle">LLD Validation</h2>
         </div>
         <div class="result-actions">
           <button id="generateLldBtn" type="button" class="primary-btn">
