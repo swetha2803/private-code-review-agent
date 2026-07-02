@@ -3,6 +3,7 @@ const state = {
   findings: [],
   filter: "all",
   reviewPack: null,
+  eaDocument: null,
 };
 
 const localSessionKey = "private-code-review-agent.latestSession";
@@ -33,6 +34,7 @@ const elements = {
   zipDropzone: document.querySelector("#zipDropzone"),
   codeInput: document.querySelector("#codeInput"),
   logInput: document.querySelector("#logInput"),
+  reviewMode: document.querySelector("#reviewMode"),
   languageHint: document.querySelector("#languageHint"),
   scanBtn: document.querySelector("#scanBtn"),
   clearBtn: document.querySelector("#clearBtn"),
@@ -81,11 +83,15 @@ const elements = {
   eaDependencies: document.querySelector("#eaDependencies"),
   isgEvidence: document.querySelector("#isgEvidence"),
   securityExceptions: document.querySelector("#securityExceptions"),
+  eaDocInput: document.querySelector("#eaDocInput"),
+  eaDocSummary: document.querySelector("#eaDocSummary"),
+  eaDocChangeRequest: document.querySelector("#eaDocChangeRequest"),
   isgDecision: document.querySelector("#isgDecision"),
   isgScore: document.querySelector("#isgScore"),
   isgGapCount: document.querySelector("#isgGapCount"),
   eaImpact: document.querySelector("#eaImpact"),
   eaTemplateOutput: document.querySelector("#eaTemplateOutput"),
+  eaDocReviewOutput: document.querySelector("#eaDocReviewOutput"),
   eaChecklistOutput: document.querySelector("#eaChecklistOutput"),
   isgAssessmentOutput: document.querySelector("#isgAssessmentOutput"),
   isgGapsOutput: document.querySelector("#isgGapsOutput"),
@@ -550,6 +556,7 @@ elements.downloadBtn.addEventListener("click", downloadReport);
 elements.downloadPackBtn.addEventListener("click", downloadReviewPack);
 elements.downloadMarkdownBtn.addEventListener("click", downloadMarkdownReport);
 elements.reportInput.addEventListener("change", importScannerReport);
+elements.eaDocInput.addEventListener("change", importEaDocument);
 elements.generateWorkbenchBtn.addEventListener("click", renderWorkbench);
 elements.exportWorkbenchBtn.addEventListener("click", exportWorkbench);
 elements.generateSignoffBtn.addEventListener("click", renderSignoffCenter);
@@ -644,8 +651,71 @@ async function loadZipFile(file) {
   elements.zipInput.value = "";
 }
 
+async function importEaDocument(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const extension = getExtension(file.name);
+    const text = extension === "docx" || extension === "pptx"
+      ? await extractOfficeText(file, extension)
+      : await file.text();
+    state.eaDocument = {
+      name: file.name,
+      type: extension || "text",
+      text: normalizeExtractedText(text),
+    };
+    elements.eaDocSummary.textContent = `${file.name} loaded locally. ${state.eaDocument.text.length} text character(s) extracted for EA comparison.`;
+    renderSignoffCenter();
+  } catch {
+    state.eaDocument = null;
+    elements.eaDocSummary.textContent = "Could not read this document locally. Try sanitized TXT, MD, DOCX, or PPTX.";
+  } finally {
+    elements.eaDocInput.value = "";
+  }
+}
+
+async function extractOfficeText(file, extension) {
+  if (!window.fflate || !window.fflate.unzipSync) {
+    throw new Error("Missing local ZIP reader.");
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const extracted = window.fflate.unzipSync(bytes);
+  const decoder = new TextDecoder("utf-8", { fatal: false });
+  const wanted = Object.entries(extracted)
+    .filter(([name]) => {
+      if (extension === "docx") return /^word\/document\.xml$/i.test(name);
+      return /^ppt\/slides\/slide\d+\.xml$/i.test(name);
+    })
+    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true }));
+
+  return wanted
+    .map(([, content]) => xmlToText(decoder.decode(content)))
+    .join("\n\n");
+}
+
+function xmlToText(xml) {
+  return xml
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeExtractedText(text) {
+  return String(text || "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function runReview() {
   const pasted = elements.codeInput.value.trim();
+  const reviewMode = elements.reviewMode.value;
   const sources = [...state.files];
 
   if (pasted) {
@@ -656,6 +726,20 @@ function runReview() {
   }
 
   const logFindings = analyzeLogs(elements.logInput.value);
+
+  if (reviewMode === "ea" && !sources.length && !logFindings.length) {
+    state.findings = [];
+    state.reviewPack = buildReviewPack([], sources, [], [], explainApplicationFlow(sources, []));
+    renderSummary(0);
+    renderFindings();
+    renderReviewPack();
+    renderAssistant();
+    renderSignoffCenter();
+    renderPrintableReport();
+    elements.summaryText.textContent = "EA architecture/signoff review generated from workbench, EA fields, and uploaded template.";
+    document.querySelector("#signoffCenterTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
 
   if (!sources.length && !logFindings.length && !elements.logInput.value.trim()) {
     state.findings = [];
@@ -669,11 +753,19 @@ function runReview() {
   return;
   }
 
-  state.findings = sources.flatMap((file) => scanSource(file));
+  state.findings = reviewMode === "logs" ? [] : sources.flatMap((file) => scanSource(file));
   const apiInventory = extractApiInventory(sources);
   state.findings.push(...logFindings);
   const applicationFlow = explainApplicationFlow(sources, apiInventory);
   state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings, applicationFlow);
+  if (reviewMode === "lld") {
+    state.findings.push(...buildLldComparisonFindings(sources, state.reviewPack));
+    state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings, applicationFlow);
+  }
+  if (reviewMode === "isg") {
+    state.findings.push(...buildIsgSecurityFindings(buildSignoffPack()));
+    state.reviewPack = buildReviewPack(state.findings, sources, apiInventory, logFindings, applicationFlow);
+  }
   renderSummary(sources.length);
   renderFindings();
   renderReviewPack();
@@ -683,6 +775,9 @@ function runReview() {
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
+  if (reviewMode === "lld") document.querySelector("#lldCenterTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (reviewMode === "isg") document.querySelector("#signoffCenterTitle").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (reviewMode === "logs") document.querySelector("#reviewPackTitle").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function scanSource(file) {
@@ -1765,6 +1860,7 @@ function buildSignoffPack() {
   const dependencies = elements.eaDependencies.value.trim() || "Dependencies pending.";
   const evidenceText = elements.isgEvidence.value.trim();
   const exceptions = elements.securityExceptions.value.trim() || "No exceptions captured.";
+  const eaDocReview = buildEaDocumentReview(workbench, reviewPack);
   const evidenceLower = evidenceText.toLowerCase();
   const blockerCount = state.findings.filter((finding) => ["critical", "high"].includes(finding.severity)).length;
 
@@ -1827,6 +1923,9 @@ function buildSignoffPack() {
     `Pattern: ${pattern}`,
     `Impact: ${eaImpact}`,
     "",
+    "Uploaded EA Template / Sample Review",
+    eaDocReview,
+    "",
     "3. Data Flow",
     dataFlow,
     "",
@@ -1867,6 +1966,7 @@ function buildSignoffPack() {
     "- API/dependency summary",
     "- NFR/operations notes",
     "- Security/ISG readiness summary",
+    "- EA document changes requested",
     "",
     "Regards,",
   ].join("\n");
@@ -1900,9 +2000,51 @@ function buildSignoffPack() {
     evidenceRequired,
     eaChecklist,
     eaTemplate,
+    eaDocReview,
     eaMail,
     isgMail,
   };
+}
+
+function buildEaDocumentReview(workbench, reviewPack) {
+  const doc = state.eaDocument;
+  const docText = (doc && doc.text ? doc.text : "").toLowerCase();
+  const requested = elements.eaDocChangeRequest.value.trim();
+  const checks = [
+    ["Business scope", /business|scope|requirement|functional|objective/.test(docText)],
+    ["Architecture overview", /architecture|component|pattern|overview|solution/.test(docText)],
+    ["Data flow", /data flow|source|target|request|response|sequence/.test(docText)],
+    ["API/dependency summary", /api|endpoint|dependency|upstream|downstream|system/.test(docText)],
+    ["Security and privacy", /security|isg|pii|auth|authorization|encrypt|mask|tls/.test(docText)],
+    ["NFR/operations", /nfr|performance|availability|monitor|alert|support|sla/.test(docText)],
+    ["Deployment and rollback", /deploy|rollback|release|cr|implementation/.test(docText)],
+  ];
+  const missing = checks.filter(([, passed]) => !passed).map(([name]) => name);
+  const apiLines = (reviewPack.apiReview || []).slice(0, 8).map((api) => `- ${api.method} ${api.endpoint} (${api.risk})`);
+  const documentName = doc ? doc.name : "No EA sample document uploaded";
+
+  return [
+    `Document reviewed: ${documentName}`,
+    `Application/Module: ${workbench.appName}`,
+    `Change: ${workbench.devTitle}`,
+    "",
+    "Template coverage:",
+    ...bulletLines(checks.map(([name, passed]) => `${name}: ${passed ? "Available" : "Missing/unclear"}`)),
+    "",
+    "Suggested changes:",
+    ...bulletLines([
+      requested || "No specific change request entered. Apply the missing/unclear items below.",
+      missing.length ? `Add or strengthen sections: ${missing.join(", ")}.` : "Template has the main EA sections. Review wording and evidence before sharing.",
+      "Add a clear architecture diagram or text flow: user/system -> channel -> API/service -> downstream -> response/error path.",
+      apiLines.length ? `Add detected API summary:\n${apiLines.join("\n")}` : "Add API/dependency summary manually if APIs are in scope.",
+      "Add NFRs: timeout, retry, idempotency, availability, monitoring, alerting, support owner, and SLA.",
+      "Add security/privacy: data classification, PII handling, authentication, authorization, TLS, masking, logging, and ISG evidence.",
+      "Add deployment/rollback: CR number, implementation steps, smoke test, rollback decision point, and post-release validation.",
+    ]),
+    "",
+    "Ready-to-send EA change note:",
+    `Please update the EA document for ${workbench.devTitle} with architecture overview, data flow, API/dependency summary, NFR/operations, security/privacy controls, and deployment/rollback details. Current missing/unclear sections: ${missing.length ? missing.join(", ") : "none from local template scan"}.`,
+  ].join("\n");
 }
 
 function renderSignoffCenter() {
@@ -1912,6 +2054,7 @@ function renderSignoffCenter() {
   elements.isgGapCount.textContent = pack.gaps.length;
   elements.eaImpact.textContent = pack.eaImpact;
   elements.eaTemplateOutput.textContent = pack.eaTemplate;
+  elements.eaDocReviewOutput.textContent = pack.eaDocReview;
   renderList(elements.eaChecklistOutput, pack.eaChecklist);
   renderList(elements.isgAssessmentOutput, pack.evidenceChecks.map((item) => `${item.name}: ${item.status}`));
   renderList(elements.isgGapsOutput, pack.gaps.length ? pack.gaps : ["No gaps captured in pre-assessment."]);
@@ -1932,6 +2075,66 @@ function exportSignoffPack() {
   anchor.download = `ea-isg-signoff-pack-${new Date().toISOString().slice(0, 10)}.json`;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+function buildLldComparisonFindings(sources, pack) {
+  const lld = elements.lldInput.value.toLowerCase();
+  const sourceText = sources.map((source) => `${source.name}\n${source.content}`).join("\n").toLowerCase();
+  const findings = [];
+  const add = (id, title, severity, description, fix) => {
+    findings.push({
+      id,
+      title,
+      severity,
+      description,
+      fix,
+      file: "LLD comparison",
+      line: 1,
+      snippet: "Generated by Code review using LLD mode.",
+    });
+  };
+
+  if (!lld.trim()) {
+    add(
+      "lld-missing",
+      "LLD not provided for code comparison",
+      "high",
+      "Code review using LLD requires the LLD or walkthrough notes to prove the implementation matches the design.",
+      "Paste sanitized LLD or flow notes in LLD Evidence, then rerun Code review using LLD.",
+    );
+    return findings;
+  }
+
+  if ((pack.apiReview || []).length && !/api|endpoint|contract|request|response/.test(lld)) {
+    add("lld-api-gap", "Detected APIs are not covered in LLD", "medium", "The code has API endpoints/calls, but the LLD does not clearly describe API contracts.", "Add method, URL, owner, request, response, auth, timeout, error mapping, and retry details.");
+  }
+  if (/auth|login|otp|mfa|token|session/.test(sourceText) && !/auth|login|otp|mfa|token|session/.test(lld)) {
+    add("lld-auth-gap", "Auth/session logic is not explained in LLD", "high", "The code appears to touch authentication or session behavior, but the LLD does not explain the security flow.", "Update LLD with login, OTP/MFA, token storage, refresh, logout, expiry, and failure behavior.");
+  }
+  if (/localstorage|asyncstorage|sharedpreferences|userdefaults|cache|keystore|keychain/.test(sourceText) && !/storage|cache|keychain|keystore|encrypt/.test(lld)) {
+    add("lld-storage-gap", "Storage/cache behavior is not explained in LLD", "medium", "The implementation appears to store/cache data, but LLD does not clearly define sensitive-data handling.", "Document storage location, encryption, retention, masking, logout clearing, and privacy impact.");
+  }
+  if (/timeout|retry|axios|fetch|okhttp|retrofit|webclient/.test(sourceText) && !/timeout|retry|fallback|circuit|idempot/.test(lld)) {
+    add("lld-timeout-gap", "Timeout/retry design is not explained in LLD", "medium", "Client/integration calls need bounded behavior and failure handling in banking flows.", "Add timeout values, retry policy, duplicate/idempotency handling, and user/system failure behavior.");
+  }
+  if (/console\.|log\.|logger|print\(/.test(sourceText) && !/log|mask|redact|correlation|audit/.test(lld)) {
+    add("lld-logging-gap", "Logging and masking design is not explained in LLD", "medium", "Code/log behavior exists, but LLD does not show how sensitive data is masked and correlated.", "Add logging level, correlation ID, masked fields, retention, and operational owner.");
+  }
+
+  return findings;
+}
+
+function buildIsgSecurityFindings(signoffPack) {
+  return signoffPack.gaps.slice(0, 12).map((gap, index) => ({
+    id: `isg-gap-${index + 1}`,
+    title: "ISG security evidence gap",
+    severity: /critical\/high|internet-facing|pii|financial|exception/i.test(gap) ? "high" : "medium",
+    description: gap,
+    fix: "Provide approved security evidence or documented risk acceptance before ISG signoff.",
+    file: "ISG pre-assessment",
+    line: 1,
+    snippet: gap,
+  }));
 }
 
 function buildLldReview() {
@@ -2368,9 +2571,11 @@ function collectSessionData() {
     findings: state.findings,
     filter: state.filter,
     reviewPack: state.reviewPack,
+    eaDocument: state.eaDocument,
     forms: {
       codeInput: elements.codeInput.value,
       logInput: elements.logInput.value,
+      reviewMode: elements.reviewMode.value,
       languageHint: elements.languageHint.value,
       wbAppName: elements.wbAppName.value,
       wbDevTitle: elements.wbDevTitle.value,
@@ -2387,6 +2592,7 @@ function collectSessionData() {
       eaDependencies: elements.eaDependencies.value,
       isgEvidence: elements.isgEvidence.value,
       securityExceptions: elements.securityExceptions.value,
+      eaDocChangeRequest: elements.eaDocChangeRequest.value,
       reviewFlow: elements.reviewFlow.value,
       lldInput: elements.lldInput.value,
       claimInput: elements.claimInput.value,
@@ -2402,6 +2608,10 @@ function applySessionData(session) {
   state.findings = Array.isArray(session.findings) ? session.findings : [];
   state.filter = session.filter || "all";
   state.reviewPack = session.reviewPack || null;
+  state.eaDocument = session.eaDocument || null;
+  elements.eaDocSummary.textContent = state.eaDocument
+    ? `${state.eaDocument.name} loaded from saved session.`
+    : "Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.";
 
   Object.entries(session.forms).forEach(([key, value]) => {
     if (elements[key]) elements[key].value = value;
@@ -2698,9 +2908,14 @@ function clearAll() {
   state.files = [];
   state.findings = [];
   state.reviewPack = null;
+  state.eaDocument = null;
   elements.fileInput.value = "";
+  elements.zipInput.value = "";
   elements.codeInput.value = "";
   elements.logInput.value = "";
+  elements.reviewMode.value = "full";
+  elements.eaDocChangeRequest.value = "";
+  elements.eaDocSummary.textContent = "Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.";
   elements.downloadBtn.disabled = true;
   elements.downloadPackBtn.disabled = true;
   renderSummary(0);

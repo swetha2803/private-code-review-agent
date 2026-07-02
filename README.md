@@ -73,6 +73,9 @@ Integration lead features:
 - ISG pre-assessment with readiness score, missing evidence, open gaps, security exceptions, and submission mail.
 - Application flow explanation for uploaded/pasted/folder-scanned source.
 - LLD and walkthrough validation for flow coverage, API contracts, timeout/retry, error handling, security controls, data handling, CI/CD, deployment, and claim-vs-evidence review.
+- Main review type dropdown for Full code review, Code review using LLD, ISG security review, Log analyzer only, and EA signoff / architecture review.
+- Code review using LLD compares uploaded code/APIs/auth/storage/logging/timeout behavior against pasted LLD notes and creates actionable code-vs-LLD findings.
+- EA signoff can locally read sanitized TXT/MD/DOCX/PPTX template samples, compare required architecture sections, and generate requested document changes without uploading the document.
 - Review-flow profiles: Generic, Mobile, Backend, Frontend, Integration, and Full stack. Mobile adds focused checks for auth management, API connection config, web-client timeout config, PMD/code quality, build/publish pipeline, approved environment validation, and repo/access evidence.
 - Local session save/load, session JSON export/import, and tracker CSV export for Excel/manual trackers.
 - Offline review assistant that explains findings in plain English, suggests next actions, asks vendor/internal-team questions, and drafts a review clarification mail without using any external AI service.

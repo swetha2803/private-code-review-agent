@@ -239,6 +239,16 @@
 
           <div class="controls">
             <label>
+              Review type
+              <select id="reviewMode">
+                <option value="full">Full code review</option>
+                <option value="lld">Code review using LLD</option>
+                <option value="isg">ISG security review</option>
+                <option value="logs">Log analyzer only</option>
+                <option value="ea">EA signoff / architecture review</option>
+              </select>
+            </label>
+            <label>
               Language hint
               <select id="languageHint">
                 <option value="auto">Auto detect</option>
@@ -634,6 +644,15 @@
           Exceptions / Open Risks
           <textarea id="securityExceptions" placeholder="Known exceptions, compensating controls, expiry date, approver, owner..."></textarea>
         </label>
+        <label class="wide-field">
+          EA Sample Template / Document
+          <input id="eaDocInput" type="file" accept=".txt,.md,.docx,.pptx" />
+          <small id="eaDocSummary">Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.</small>
+        </label>
+        <label class="wide-field">
+          Requested EA Document Changes
+          <textarea id="eaDocChangeRequest" placeholder="Example: add data flow diagram, update API list, add NFR, add rollback section, make mail formal..."></textarea>
+        </label>
       </div>
 
       <div class="gate-strip">
@@ -659,6 +678,10 @@
         <article class="pack-card message-card">
           <h3>EA Template</h3>
           <pre id="eaTemplateOutput"></pre>
+        </article>
+        <article class="pack-card message-card">
+          <h3>EA Document Review / Changes</h3>
+          <pre id="eaDocReviewOutput"></pre>
         </article>
         <article class="pack-card">
           <h3>EA Review Checklist</h3>

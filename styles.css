@@ -400,7 +400,7 @@ textarea {
 
 .controls {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto auto;
   gap: 12px;
   align-items: end;
   margin-top: 14px;
