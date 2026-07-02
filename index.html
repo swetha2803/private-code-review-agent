@@ -26,6 +26,7 @@
 
     <nav class="app-nav" aria-label="Workspace navigation">
       <a href="#quickStartTitle">Quick Start</a>
+      <a href="#assistantTitle">Assistant</a>
       <a href="#sourceReview">Source Review</a>
       <a href="#reviewPackTitle">Review Pack</a>
       <a href="#workbenchTitle">Workbench</a>
@@ -69,6 +70,47 @@
           <strong>Citrix mode:</strong>
           Everything in this browser page runs locally. Do not paste real customer data,
           passwords, OTPs, tokens, or unmasked account/card numbers.
+        </div>
+      </div>
+    </section>
+
+    <section class="assistant-panel app-section" aria-labelledby="assistantTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="assistantTitle">Review Assistant</h2>
+          <p>Plain-English guidance for code, APIs, logs, LLD, EA, ISG, and next actions.</p>
+        </div>
+        <div class="result-actions">
+          <button id="refreshAssistantBtn" type="button" class="primary-btn">Refresh Advice</button>
+          <button type="button" class="collapse-btn" data-collapse-target="assistantBody">Hide</button>
+        </div>
+      </div>
+      <div id="assistantBody">
+        <div class="assistant-grid">
+          <article class="assistant-card">
+            <h3>What This Means</h3>
+            <ul id="assistantSummary"></ul>
+          </article>
+          <article class="assistant-card">
+            <h3>Do Next</h3>
+            <ul id="assistantNextActions"></ul>
+          </article>
+          <article class="assistant-card">
+            <h3>Ask Vendor</h3>
+            <ul id="assistantVendorQuestions"></ul>
+          </article>
+          <article class="assistant-card">
+            <h3>Ask Internal Teams</h3>
+            <ul id="assistantInternalQuestions"></ul>
+          </article>
+          <article class="assistant-card wide-card">
+            <h3>Simple Explanation</h3>
+            <pre id="assistantSimpleExplanation"></pre>
+          </article>
+          <article class="assistant-card wide-card">
+            <h3>Ready-To-Send Note</h3>
+            <pre id="assistantMailDraft"></pre>
+          </article>
         </div>
       </div>
     </section>

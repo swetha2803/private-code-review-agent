@@ -40,6 +40,7 @@ This tool is a private offline workbench for integration leads who need to revie
 - Session JSON import/export.
 - Mail draft generation.
 - Gamma-ready outline export.
+- Offline review assistant for plain-English explanation, next actions, vendor questions, internal-team questions, and clarification mail.
 - Sample project and sample validation script.
 
 ## Recommended Next Improvements

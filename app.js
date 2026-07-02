@@ -14,6 +14,13 @@ const elements = {
   exportSessionBtn: document.querySelector("#exportSessionBtn"),
   sessionInput: document.querySelector("#sessionInput"),
   exportTrackerCsvBtn: document.querySelector("#exportTrackerCsvBtn"),
+  refreshAssistantBtn: document.querySelector("#refreshAssistantBtn"),
+  assistantSummary: document.querySelector("#assistantSummary"),
+  assistantNextActions: document.querySelector("#assistantNextActions"),
+  assistantVendorQuestions: document.querySelector("#assistantVendorQuestions"),
+  assistantInternalQuestions: document.querySelector("#assistantInternalQuestions"),
+  assistantSimpleExplanation: document.querySelector("#assistantSimpleExplanation"),
+  assistantMailDraft: document.querySelector("#assistantMailDraft"),
   dropzone: document.querySelector("#dropzone"),
   zipInput: document.querySelector("#zipInput"),
   zipDropzone: document.querySelector("#zipDropzone"),
@@ -484,6 +491,7 @@ elements.loadSessionBtn.addEventListener("click", loadSessionLocal);
 elements.exportSessionBtn.addEventListener("click", exportSessionFile);
 elements.sessionInput.addEventListener("change", importSessionFile);
 elements.exportTrackerCsvBtn.addEventListener("click", exportTrackerCsv);
+elements.refreshAssistantBtn.addEventListener("click", renderAssistant);
 
 ["dragenter", "dragover"].forEach((eventName) => {
   elements.dropzone.addEventListener(eventName, (event) => {
@@ -550,6 +558,7 @@ document.querySelectorAll(".collapse-btn").forEach((button) => {
 });
 
 renderReviewPack();
+renderAssistant();
 renderWorkbench();
 renderSignoffCenter();
 renderLldCenter();
@@ -626,6 +635,7 @@ function runReview() {
     renderSummary();
     renderFindings();
     renderReviewPack();
+    renderAssistant();
     return;
   }
 
@@ -637,6 +647,7 @@ function runReview() {
   renderSummary(sources.length);
   renderFindings();
   renderReviewPack();
+  renderAssistant();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -934,6 +945,7 @@ async function importScannerReport(event) {
   renderSummary(1);
   renderFindings();
   renderReviewPack();
+  renderAssistant();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -1191,6 +1203,111 @@ function renderReviewPack() {
   elements.manualCount.textContent = pack.manualReview.length;
   elements.downloadPackBtn.disabled = !state.findings.length && !sources.length;
   elements.downloadMarkdownBtn.disabled = !state.findings.length && !sources.length;
+}
+
+function buildAssistantAdvice() {
+  const sources = currentSources();
+  const pack = state.reviewPack || buildReviewPack(state.findings, sources);
+  const counts = pack.counts || countBySeverity(state.findings);
+  const blockers = state.findings.filter((finding) => ["critical", "high"].includes(finding.severity));
+  const medium = state.findings.filter((finding) => finding.severity === "medium");
+  const apis = pack.apiReview || [];
+  const logFindings = (pack.logAnalysis && pack.logAnalysis.findings) || [];
+  const reviewFlow = elements.reviewFlow ? elements.reviewFlow.value : "Generic";
+  const decision = pack.decision || "Not reviewed";
+
+  const summary = [
+    state.findings.length
+      ? `The review found ${state.findings.length} item(s): ${counts.critical} critical, ${counts.high} high, ${counts.medium} medium, ${counts.low} low.`
+      : "No automated findings yet. Upload code/ZIP/folder or paste code, then run review.",
+    `Current decision is ${decision}.`,
+    apis.length
+      ? `${apis.length} API/endpoints were detected and should be mapped to FS/LLD and owning teams.`
+      : "No API endpoints detected yet. If this is an integration change, request API contracts manually.",
+    logFindings.length
+      ? `${logFindings.length} log issue(s) were detected. Treat logs as sensitive and verify masking.`
+      : "No log issues detected or no logs provided.",
+  ];
+
+  const nextActions = uniqueItems([
+    !state.findings.length && "Upload ZIP/folder/files or paste code, then click Run Review.",
+    blockers.length && "Do not close/sign off until critical/high findings are fixed or formally risk accepted.",
+    medium.length && "Review medium findings with vendor and decide fix, waiver, or evidence requirement.",
+    "Fill Application, Development title, POCs, FS summary, and open issues in the Workbench.",
+    "Select the correct Review Flow profile in LLD Evidence: Mobile, Backend, Frontend, Integration, Full stack, or Generic.",
+    "Paste sanitized LLD/walkthrough notes and developer claims, then validate LLD.",
+    "Fill EA/ISG evidence and generate signoff pack before sending to EA/ISG.",
+    "Export Tracker CSV and session JSON before closing the review.",
+  ]);
+
+  const vendorQuestions = uniqueItems([
+    blockers.length && "Please provide fix commit, RCA, test evidence, owner, and ETA for each critical/high finding.",
+    apis.length && "Please share API contracts, auth scheme, timeout, retry, error handling, and request/response samples with masked data.",
+    "Please confirm code was validated in approved CI/SIT/UAT environment, not only on an individual machine.",
+    "Please provide SAST, SCA/dependency, secret scan, unit test, and release build evidence.",
+    reviewFlow === "Mobile" && "Please explain mobile auth/session flow, secure storage, API timeout config, certificate/TLS handling, and release build pipeline.",
+    "Please confirm whether any open risks, exceptions, or pending dependencies exist.",
+  ]);
+
+  const internalQuestions = uniqueItems([
+    "DevOps: Is the build/publish pipeline approved, traceable, and quality-gated?",
+    "ISG: Are SAST, SCA, secret scan, TLS/storage/logging controls, and exceptions acceptable?",
+    "EA: Is architecture impact, data flow, dependency map, NFR, and rollback approach acceptable?",
+    "Business/UAT: Does implementation match FS and are open issues accepted?",
+    "Operations: Are monitoring, alerts, support ownership, and escalation path defined?",
+  ]);
+
+  const simpleExplanation = [
+    "Simple reading:",
+    "",
+    state.findings.length
+      ? `The tool found review points in the submitted code/logs. The important ones are the critical and high findings because they can block closure.`
+      : "The tool has not found issues yet because no review has been run or the current input did not match configured rules.",
+    "",
+    apis.length
+      ? `It also found APIs. For each API, you should know who owns it, what data it sends, how auth works, what happens on timeout, and what error the user sees.`
+      : "If APIs are part of the change but not detected, ask the team for the API list and contracts.",
+    "",
+    "Do not accept verbal confidence alone. Ask for evidence: pipeline result, scanner report, config path, test result, and signoff.",
+  ].join("\n");
+
+  const mailDraft = [
+    `Subject: Review clarification and evidence required - ${elements.wbDevTitle.value || "Development Review"}`,
+    "",
+    "Hi Team,",
+    "",
+    `I completed the current review pass. Decision: ${decision}.`,
+    "",
+    "Summary:",
+    ...bulletLines(summary),
+    "",
+    "Required next actions:",
+    ...bulletLines(nextActions.slice(0, 8)),
+    "",
+    "Questions / evidence required:",
+    ...bulletLines(vendorQuestions),
+    "",
+    "Regards,",
+  ].join("\n");
+
+  return {
+    summary,
+    nextActions,
+    vendorQuestions,
+    internalQuestions,
+    simpleExplanation,
+    mailDraft,
+  };
+}
+
+function renderAssistant() {
+  const advice = buildAssistantAdvice();
+  renderList(elements.assistantSummary, advice.summary);
+  renderList(elements.assistantNextActions, advice.nextActions);
+  renderList(elements.assistantVendorQuestions, advice.vendorQuestions);
+  renderList(elements.assistantInternalQuestions, advice.internalQuestions);
+  elements.assistantSimpleExplanation.textContent = advice.simpleExplanation;
+  elements.assistantMailDraft.textContent = advice.mailDraft;
 }
 
 function renderList(target, items) {
@@ -1899,6 +2016,7 @@ function applySessionData(session) {
   renderSummary();
   renderFindings();
   renderReviewPack();
+  renderAssistant();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -2189,6 +2307,7 @@ function clearAll() {
   renderSummary(0);
   elements.findingsList.innerHTML = `<div class="empty-state">Upload a folder, upload files, or paste code to run a private review.</div>`;
   renderReviewPack();
+  renderAssistant();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();

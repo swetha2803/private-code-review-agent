@@ -75,6 +75,7 @@ Integration lead features:
 - LLD and walkthrough validation for flow coverage, API contracts, timeout/retry, error handling, security controls, data handling, CI/CD, deployment, and claim-vs-evidence review.
 - Review-flow profiles: Generic, Mobile, Backend, Frontend, Integration, and Full stack. Mobile adds focused checks for auth management, API connection config, web-client timeout config, PMD/code quality, build/publish pipeline, approved environment validation, and repo/access evidence.
 - Local session save/load, session JSON export/import, and tracker CSV export for Excel/manual trackers.
+- Offline review assistant that explains findings in plain English, suggests next actions, asks vendor/internal-team questions, and drafts a review clarification mail without using any external AI service.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 
