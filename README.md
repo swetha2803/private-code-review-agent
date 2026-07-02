@@ -94,6 +94,14 @@ Run the included dummy sample review:
 
 The sample intentionally produces blocking findings, API inventory, log findings, and report sections so you can verify the tool end to end without using real banking code.
 
+Java sample:
+
+```text
+samples/java/EcommerceApp.java
+```
+
+Use it to test `.java` upload or paste-based review in the browser dashboard.
+
 Example:
 
 ```powershell
