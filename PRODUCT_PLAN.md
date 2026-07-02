@@ -42,6 +42,7 @@ This tool is a private offline workbench for integration leads who need to revie
 - Gamma-ready outline export.
 - Offline review assistant for plain-English explanation, next actions, vendor questions, internal-team questions, and clarification mail.
 - Technical and functional explanation assistant for users returning to code review after a long gap.
+- Redaction helper and issue register for safer communication and structured closure tracking.
 - Sample project and sample validation script.
 
 ## Recommended Next Improvements

@@ -30,6 +30,7 @@
       <a href="#sourceReview">Source Review</a>
       <a href="#reviewPackTitle">Review Pack</a>
       <a href="#workbenchTitle">Workbench</a>
+      <a href="#safetyTitle">Safety / Issues</a>
       <a href="#signoffCenterTitle">EA / ISG</a>
       <a href="#lldCenterTitle">LLD Evidence</a>
       <a href="#privacyModelTitle">Privacy</a>
@@ -474,6 +475,40 @@
           <pre id="gammaOutput"></pre>
         </article>
       </div>
+      </div>
+    </section>
+
+    <section class="safety-center app-section" aria-labelledby="safetyTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="safetyTitle">Safety and Issue Register</h2>
+          <p>Redact sensitive text and create a formal issue register from review findings.</p>
+        </div>
+        <div class="result-actions">
+          <button id="redactBtn" type="button" class="primary-btn">Redact Text</button>
+          <button id="buildIssuesBtn" type="button" class="primary-btn">Build Issues</button>
+          <button id="exportIssuesCsvBtn" type="button" class="ghost-btn">Export Issues CSV</button>
+          <button type="button" class="collapse-btn" data-collapse-target="safetyBody">Hide</button>
+        </div>
+      </div>
+
+      <div id="safetyBody">
+        <div class="workbench-grid">
+          <label class="wide-field">
+            Text To Redact
+            <textarea id="redactionInput" placeholder="Paste mail/report/log text here before sharing."></textarea>
+          </label>
+          <label class="wide-field">
+            Redacted Output
+            <textarea id="redactionOutput" readonly placeholder="Redacted text appears here."></textarea>
+          </label>
+        </div>
+        <div class="pack-grid">
+          <article class="pack-card message-card">
+            <h3>Issue Register</h3>
+            <div id="issueRegisterTable" class="table-wrap"></div>
+          </article>
+        </div>
       </div>
     </section>
 

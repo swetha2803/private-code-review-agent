@@ -90,6 +90,12 @@ const elements = {
   eaMailOutput: document.querySelector("#eaMailOutput"),
   isgMailOutput: document.querySelector("#isgMailOutput"),
   generateLldBtn: document.querySelector("#generateLldBtn"),
+  redactBtn: document.querySelector("#redactBtn"),
+  buildIssuesBtn: document.querySelector("#buildIssuesBtn"),
+  exportIssuesCsvBtn: document.querySelector("#exportIssuesCsvBtn"),
+  redactionInput: document.querySelector("#redactionInput"),
+  redactionOutput: document.querySelector("#redactionOutput"),
+  issueRegisterTable: document.querySelector("#issueRegisterTable"),
   exportLldBtn: document.querySelector("#exportLldBtn"),
   reviewFlow: document.querySelector("#reviewFlow"),
   lldInput: document.querySelector("#lldInput"),
@@ -543,6 +549,9 @@ elements.generateSignoffBtn.addEventListener("click", renderSignoffCenter);
 elements.exportSignoffBtn.addEventListener("click", exportSignoffPack);
 elements.generateLldBtn.addEventListener("click", renderLldCenter);
 elements.exportLldBtn.addEventListener("click", exportLldReview);
+elements.redactBtn.addEventListener("click", redactText);
+elements.buildIssuesBtn.addEventListener("click", renderIssueRegister);
+elements.exportIssuesCsvBtn.addEventListener("click", exportIssuesCsv);
 
 elements.filterButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -565,6 +574,7 @@ document.querySelectorAll(".collapse-btn").forEach((button) => {
 renderReviewPack();
 renderAssistant();
 renderWorkbench();
+renderIssueRegister();
 renderSignoffCenter();
 renderLldCenter();
 
@@ -639,9 +649,10 @@ function runReview() {
     state.reviewPack = null;
     renderSummary();
     renderFindings();
-    renderReviewPack();
-    renderAssistant();
-    return;
+  renderReviewPack();
+  renderAssistant();
+  renderIssueRegister();
+  return;
   }
 
   state.findings = sources.flatMap((file) => scanSource(file));
@@ -653,6 +664,7 @@ function runReview() {
   renderFindings();
   renderReviewPack();
   renderAssistant();
+  renderIssueRegister();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -951,6 +963,7 @@ async function importScannerReport(event) {
   renderFindings();
   renderReviewPack();
   renderAssistant();
+  renderIssueRegister();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -2106,6 +2119,97 @@ function buildFunctionalExplanation(reviewFlow, pack, lld) {
   return common;
 }
 
+function redactText() {
+  elements.redactionOutput.value = redactSensitiveText(elements.redactionInput.value);
+}
+
+function redactSensitiveText(value) {
+  return String(value || "")
+    .replace(/\b([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, "$1***@$2")
+    .replace(/\b(?:\+?\d{1,3}[-\s]?)?[6-9]\d{9}\b/g, "[MOBILE_REDACTED]")
+    .replace(/\b\d{12,19}\b/g, "[NUMBER_REDACTED]")
+    .replace(/\b(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})\b/g, "[JWT_REDACTED]")
+    .replace(/\b(api[_-]?key|secret|token|password|authorization|bearer)\s*[:=]\s*([A-Za-z0-9_.:/+=-]{8,})/gi, "$1=[SECRET_REDACTED]")
+    .replace(/\b(accountNumber|customerId|cif|pan|iban|cardNumber|aadhaar|ssn)\s*[:=]\s*([A-Za-z0-9-]+)/gi, "$1=[ID_REDACTED]");
+}
+
+function buildIssueRegister() {
+  return state.findings.map((finding, index) => ({
+    issueId: `IR-${String(index + 1).padStart(3, "0")}`,
+    severity: finding.severity.toUpperCase(),
+    title: finding.title,
+    source: `${finding.file}:${finding.line}`,
+    owner: "TBD",
+    status: ["critical", "high"].includes(finding.severity) ? "Blocked" : "Open",
+    eta: "TBD",
+    rca: "Pending",
+    fixEvidence: "Pending",
+    retestStatus: "Pending",
+    closure: "Pending",
+    action: finding.fix,
+  }));
+}
+
+function renderIssueRegister() {
+  const issues = buildIssueRegister();
+  if (!issues.length) {
+    elements.issueRegisterTable.innerHTML = `<div class="empty-state">No findings yet. Run review to build issue register.</div>`;
+    return;
+  }
+
+  const headers = ["Issue ID", "Severity", "Title", "Source", "Owner", "Status", "ETA", "RCA", "Fix Evidence", "Retest", "Closure", "Action"];
+  elements.issueRegisterTable.innerHTML = `
+    <table class="issue-table">
+      <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${issues
+          .map(
+            (issue) => `
+              <tr>
+                <td>${escapeHtml(issue.issueId)}</td>
+                <td>${escapeHtml(issue.severity)}</td>
+                <td>${escapeHtml(issue.title)}</td>
+                <td>${escapeHtml(issue.source)}</td>
+                <td>${escapeHtml(issue.owner)}</td>
+                <td>${escapeHtml(issue.status)}</td>
+                <td>${escapeHtml(issue.eta)}</td>
+                <td>${escapeHtml(issue.rca)}</td>
+                <td>${escapeHtml(issue.fixEvidence)}</td>
+                <td>${escapeHtml(issue.retestStatus)}</td>
+                <td>${escapeHtml(issue.closure)}</td>
+                <td>${escapeHtml(issue.action)}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function exportIssuesCsv() {
+  const issues = buildIssueRegister();
+  const rows = [
+    ["Issue ID", "Severity", "Title", "Source", "Owner", "Status", "ETA", "RCA", "Fix Evidence", "Retest", "Closure", "Action"],
+    ...issues.map((issue) => [
+      issue.issueId,
+      issue.severity,
+      issue.title,
+      issue.source,
+      issue.owner,
+      issue.status,
+      issue.eta,
+      issue.rca,
+      issue.fixEvidence,
+      issue.retestStatus,
+      issue.closure,
+      issue.action,
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
+  downloadText(csv, `issue-register-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv");
+}
+
 function collectSessionData() {
   return {
     version: 1,
@@ -2136,6 +2240,8 @@ function collectSessionData() {
       reviewFlow: elements.reviewFlow.value,
       lldInput: elements.lldInput.value,
       claimInput: elements.claimInput.value,
+      redactionInput: elements.redactionInput.value,
+      redactionOutput: elements.redactionOutput.value,
     },
   };
 }
@@ -2158,6 +2264,7 @@ function applySessionData(session) {
   renderFindings();
   renderReviewPack();
   renderAssistant();
+  renderIssueRegister();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();
@@ -2449,6 +2556,7 @@ function clearAll() {
   elements.findingsList.innerHTML = `<div class="empty-state">Upload a folder, upload files, or paste code to run a private review.</div>`;
   renderReviewPack();
   renderAssistant();
+  renderIssueRegister();
   renderWorkbench();
   renderSignoffCenter();
   renderLldCenter();

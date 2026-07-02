@@ -77,6 +77,7 @@ Integration lead features:
 - Local session save/load, session JSON export/import, and tracker CSV export for Excel/manual trackers.
 - Offline review assistant that explains findings in plain English, suggests next actions, asks vendor/internal-team questions, and drafts a review clarification mail without using any external AI service.
 - Technical and functional code explanations in simple English, plus strict review gates to separate blockers from normal improvement items.
+- Redaction helper for sensitive text and issue register CSV export with owner/status/ETA/RCA/retest/closure fields.
 
 Do not paste real customer data, tokens, OTPs, passwords, production secrets, or unmasked banking identifiers into logs or reports.
 

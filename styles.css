@@ -122,6 +122,7 @@ label,
 .workbench,
 .signoff-center,
 .lld-center,
+.safety-center,
 .local-note {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -556,6 +557,34 @@ button:disabled {
   padding: 18px;
 }
 
+.safety-center {
+  margin: 0 32px 20px;
+  padding: 18px;
+}
+
+.table-wrap {
+  overflow: auto;
+}
+
+.issue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.issue-table th,
+.issue-table td {
+  border: 1px solid var(--line);
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.issue-table th {
+  background: #eef3f5;
+  font-weight: 800;
+}
+
 .lld-center {
   margin: 0 32px 20px;
   padding: 18px;
@@ -760,6 +789,7 @@ button:disabled {
   .workbench,
   .signoff-center,
   .lld-center,
+  .safety-center,
   .local-note {
     margin: 0 16px 20px;
   }
