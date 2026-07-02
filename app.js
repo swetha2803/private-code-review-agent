@@ -586,7 +586,7 @@ document.querySelectorAll(".collapse-btn").forEach((button) => {
     const target = document.querySelector(`#${button.dataset.collapseTarget}`);
     if (!target) return;
     const collapsed = target.classList.toggle("is-collapsed");
-    button.textContent = collapsed ? "Show" : "Hide";
+    button.textContent = collapsed ? "Open" : "Minimize";
   });
 });
 
@@ -604,7 +604,7 @@ function initializeCollapsedSections() {
     const target = document.querySelector(`#${button.dataset.collapseTarget}`);
     if (!target) return;
     target.classList.add("is-collapsed");
-    button.textContent = "Show";
+    button.textContent = "Open";
   });
 }
 
