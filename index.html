@@ -720,9 +720,14 @@
             <option>Full stack</option>
           </select>
         </label>
+        <label>
+          LLD File
+          <input id="lldFileInput" type="file" accept=".txt,.md,.docx,.pptx" />
+          <small id="lldFileSummary">Upload TXT, DOCX, or PPTX.</small>
+        </label>
         <label class="wide-field">
-          LLD / Flow Explanation
-          <textarea id="lldInput" placeholder="Paste sanitized LLD, flow explanation, component design, timeout/config notes, CI/CD notes..."></textarea>
+          LLD Content
+          <textarea id="lldInput" placeholder="Upload LLD file or paste sanitized LLD content here."></textarea>
         </label>
         <label class="wide-field">
           Developer Claims / Walkthrough Notes

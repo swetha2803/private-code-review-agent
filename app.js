@@ -110,6 +110,8 @@ const elements = {
   issueRegisterTable: document.querySelector("#issueRegisterTable"),
   exportLldBtn: document.querySelector("#exportLldBtn"),
   reviewFlow: document.querySelector("#reviewFlow"),
+  lldFileInput: document.querySelector("#lldFileInput"),
+  lldFileSummary: document.querySelector("#lldFileSummary"),
   lldInput: document.querySelector("#lldInput"),
   claimInput: document.querySelector("#claimInput"),
   lldCoverageOutput: document.querySelector("#lldCoverageOutput"),
@@ -557,6 +559,7 @@ elements.downloadPackBtn.addEventListener("click", downloadReviewPack);
 elements.downloadMarkdownBtn.addEventListener("click", downloadMarkdownReport);
 elements.reportInput.addEventListener("change", importScannerReport);
 elements.eaDocInput.addEventListener("change", importEaDocument);
+elements.lldFileInput.addEventListener("change", importLldFile);
 elements.generateWorkbenchBtn.addEventListener("click", renderWorkbench);
 elements.exportWorkbenchBtn.addEventListener("click", exportWorkbench);
 elements.generateSignoffBtn.addEventListener("click", renderSignoffCenter);
@@ -681,6 +684,25 @@ async function importEaDocument(event) {
     elements.eaDocSummary.textContent = "Could not read this document locally. Try sanitized TXT, MD, DOCX, or PPTX.";
   } finally {
     elements.eaDocInput.value = "";
+  }
+}
+
+async function importLldFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const extension = getExtension(file.name);
+    const text = extension === "docx" || extension === "pptx"
+      ? await extractOfficeText(file, extension)
+      : await file.text();
+    const normalized = normalizeExtractedText(text);
+    elements.lldInput.value = normalized;
+    elements.lldFileSummary.textContent = `${file.name} loaded. ${normalized.length} character(s) extracted.`;
+    renderLldCenter();
+  } catch {
+    elements.lldFileSummary.textContent = "Could not read this LLD file. Try TXT, MD, DOCX, or PPTX.";
+  } finally {
+    elements.lldFileInput.value = "";
   }
 }
 
@@ -2662,6 +2684,9 @@ function applySessionData(session) {
   state.filter = session.filter || "all";
   state.reviewPack = session.reviewPack || null;
   state.eaDocument = session.eaDocument || null;
+  elements.lldFileSummary.textContent = elements.lldInput.value
+    ? "LLD content loaded from saved session."
+    : "Upload TXT, DOCX, or PPTX.";
   elements.eaDocSummary.textContent = state.eaDocument
     ? `${state.eaDocument.name} loaded from saved session.`
     : "Optional sanitized TXT, DOCX, or PPTX.";
@@ -2968,6 +2993,8 @@ function clearAll() {
   elements.logInput.value = "";
   elements.reviewMode.value = "full";
   elements.eaDocChangeRequest.value = "";
+  elements.lldFileInput.value = "";
+  elements.lldFileSummary.textContent = "Upload TXT, DOCX, or PPTX.";
   elements.eaDocSummary.textContent = "Optional sanitized TXT, DOCX, or PPTX.";
   elements.downloadBtn.disabled = true;
   elements.downloadPackBtn.disabled = true;
