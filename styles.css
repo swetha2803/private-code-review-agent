@@ -720,6 +720,24 @@ button:disabled {
   background: #ffffff;
 }
 
+.workbench-grid input[type="file"] {
+  min-height: 40px;
+  color: transparent;
+  cursor: pointer;
+}
+
+.workbench-grid input[type="file"]::file-selector-button {
+  min-height: 38px;
+  margin: 0 12px 0 0;
+  border: 1px solid #ffd28a;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--primary-strong);
+  background: #fff3de;
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .workbench-grid textarea {
   min-height: 100px;
   resize: vertical;

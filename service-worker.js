@@ -1,4 +1,4 @@
-const CACHE_NAME = "private-code-review-desk-v9";
+const CACHE_NAME = "private-code-review-desk-v10";
 const ASSETS = [
   "./",
   "./index.html",
