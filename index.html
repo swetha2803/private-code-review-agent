@@ -19,18 +19,18 @@
     <header class="topbar">
       <div>
         <h1>Integration Review Command Center</h1>
-        <p>Offline review workspace for code, APIs, logs, FS, LLD, EA, ISG, CR, trackers, and mails.</p>
+        <p>Private offline reviewer for code, logs, LLD, EA, ISG, and mails.</p>
       </div>
       <div class="status-pill" id="privacyStatus">Offline-ready</div>
     </header>
 
     <nav class="app-nav" aria-label="Workspace navigation">
-      <a href="#quickStartTitle">Quick Start</a>
+      <a href="#quickStartTitle">Start</a>
       <a href="#assistantTitle">Assistant</a>
       <a href="#sourceReview">Source Review</a>
-      <a href="#reviewPackTitle">Review Pack</a>
-      <a href="#workbenchTitle">Workbench</a>
-      <a href="#safetyTitle">Safety / Issues</a>
+      <a href="#reviewPackTitle">Pack</a>
+      <a href="#workbenchTitle">Work</a>
+      <a href="#safetyTitle">Issues</a>
       <a href="#reportTitle">Report</a>
       <a href="#signoffCenterTitle">EA / ISG</a>
       <a href="#lldCenterTitle">LLD Evidence</a>
@@ -40,8 +40,8 @@
     <section class="quick-start app-section" aria-labelledby="quickStartTitle">
       <div class="section-head">
         <div>
-          <h2 id="quickStartTitle">Quick Start</h2>
-          <p>Use this flow if you are opening the tool for the first time inside Citrix.</p>
+          <h2 id="quickStartTitle">Start</h2>
+          <p>Use this order.</p>
         </div>
         <button type="button" class="collapse-btn" data-collapse-target="quickStartBody">Hide</button>
       </div>
@@ -49,29 +49,28 @@
         <div class="quick-grid">
           <div>
             <span>1</span>
-            <strong>Add code</strong>
-            <p>Upload a ZIP, upload a folder, upload files, or paste one file.</p>
+            <strong>Add</strong>
+            <p>ZIP, folder, files, or paste.</p>
           </div>
           <div>
             <span>2</span>
-            <strong>Run review</strong>
-            <p>Click Run Review to generate findings, API list, flow, and risk summary.</p>
+            <strong>Review</strong>
+            <p>Find issues, APIs, flow, and risk.</p>
           </div>
           <div>
             <span>3</span>
-            <strong>Fill context</strong>
-            <p>Add FS, LLD, POCs, issues, EA/ISG evidence, and review profile.</p>
+            <strong>Context</strong>
+            <p>Add FS, LLD, POCs, issues, and evidence.</p>
           </div>
           <div>
             <span>4</span>
-            <strong>Export outputs</strong>
-            <p>Export tracker CSV, mails, review pack, EA/ISG pack, or session JSON.</p>
+            <strong>Export</strong>
+            <p>Download mails, tracker, packs, or report.</p>
           </div>
         </div>
         <div class="hint-strip">
           <strong>Citrix mode:</strong>
-          Everything in this browser page runs locally. Do not paste real customer data,
-          passwords, OTPs, tokens, or unmasked account/card numbers.
+          Runs locally. Do not paste real customer data, passwords, OTPs, tokens, or unmasked numbers.
         </div>
       </div>
     </section>
@@ -79,11 +78,11 @@
     <section class="assistant-panel app-section" aria-labelledby="assistantTitle">
       <div class="section-head">
         <div>
-          <h2 id="assistantTitle">Review Assistant</h2>
-          <p>Plain-English guidance for code, APIs, logs, LLD, EA, ISG, and next actions.</p>
+          <h2 id="assistantTitle">Assistant</h2>
+          <p>Quick advice and ready messages.</p>
         </div>
         <div class="result-actions">
-          <button id="refreshAssistantBtn" type="button" class="primary-btn">Refresh Advice</button>
+          <button id="refreshAssistantBtn" type="button" class="primary-btn">Refresh</button>
           <button type="button" class="collapse-btn" data-collapse-target="assistantBody" data-start-collapsed="true">Hide</button>
         </div>
       </div>
@@ -132,25 +131,24 @@
     <section class="online-research app-section no-print" aria-labelledby="onlineResearchTitle">
       <div class="section-head">
         <div>
-          <h2 id="onlineResearchTitle">Online Research Mode</h2>
-          <p>Optional. Opens generic security/code-review references only when enabled.</p>
+          <h2 id="onlineResearchTitle">Online Help</h2>
+          <p>Optional safe reference links.</p>
         </div>
         <div class="result-actions">
           <label class="toggle-label">
             <input id="onlineResearchToggle" type="checkbox" />
-            Enable online links
+            Online links
           </label>
           <button id="buildResearchLinksBtn" type="button" class="ghost-btn">
-            Build Links
+            Build
           </button>
           <button type="button" class="collapse-btn" data-collapse-target="onlineResearchBody" data-start-collapsed="true">Hide</button>
         </div>
       </div>
       <div id="onlineResearchBody">
         <div class="hint-strip">
-          <strong>Security rule:</strong>
-          This mode does not send code, file names, logs, sessions, or reports.
-          It only creates generic reference links such as OWASP, CWE, and secure coding searches.
+          <strong>Safe:</strong>
+          No code, logs, file names, or reports are sent. Only generic OWASP/CWE links are opened.
         </div>
         <div id="researchLinksList" class="research-links">
           Online links are disabled. Turn on the toggle only if your environment allows internet research.
@@ -160,8 +158,8 @@
 
     <section class="session-bar" aria-label="Session manager">
       <div>
-        <h2>Session Manager</h2>
-        <p>Save this development review locally, reload it later, or export tracker data.</p>
+        <h2>Session</h2>
+        <p>Save, load, or export this review.</p>
       </div>
       <div class="result-actions">
         <button id="saveSessionBtn" type="button" class="ghost-btn">Save Local</button>
@@ -187,7 +185,7 @@
         <div class="section-head collapsible-head">
           <div>
             <h2 id="inputTitle">Source</h2>
-            <p>No code is uploaded. Files are read locally by your browser.</p>
+            <p>Local only. Nothing is uploaded.</p>
           </div>
           <div class="result-actions">
             <button type="button" class="collapse-btn" data-collapse-target="sourceBody">Hide</button>
@@ -205,8 +203,8 @@
               aria-label="Upload source files or folder"
             />
             <div>
-              <strong>Drop files or a folder here</strong>
-              <span>or choose files from your computer</span>
+              <strong>Drop code here</strong>
+              <span>files or folder</span>
             </div>
           </div>
 
@@ -218,28 +216,28 @@
               aria-label="Upload source ZIP file"
             />
             <div>
-              <strong>Drop a source ZIP here</strong>
-              <span>review ZIP contents locally in this browser</span>
+              <strong>Drop ZIP here</strong>
+              <span>scanned locally</span>
             </div>
           </div>
 
-          <label class="paste-label" for="codeInput">Paste code</label>
+          <label class="paste-label" for="codeInput">Code</label>
           <textarea
             id="codeInput"
             spellcheck="false"
-            placeholder="Paste a single file here, then choose a language hint and scan."
+            placeholder="Paste one file here."
           ></textarea>
 
-          <label class="paste-label" for="logInput">Paste sanitized logs</label>
+          <label class="paste-label" for="logInput">Logs</label>
           <textarea
             id="logInput"
             spellcheck="false"
-            placeholder="Paste sanitized integration logs here. Do not paste real customer data, tokens, OTPs, or secrets."
+            placeholder="Paste sanitized logs only."
           ></textarea>
 
           <div class="controls">
             <label>
-              Review type
+              Review
               <select id="reviewMode">
                 <option value="full">Full code review</option>
                 <option value="lld">Code review using LLD</option>
@@ -249,7 +247,7 @@
               </select>
             </label>
             <label>
-              Language hint
+              Language
               <select id="languageHint">
                 <option value="auto">Auto detect</option>
                 <option value="js">JavaScript / TypeScript</option>
@@ -269,7 +267,7 @@
         <div class="section-head">
           <div>
             <h2 id="resultsTitle">Findings</h2>
-            <p id="summaryText">Add code to begin.</p>
+            <p id="summaryText">Add code to start.</p>
           </div>
           <div class="result-actions">
             <label class="import-report">
@@ -325,11 +323,8 @@
     <section class="review-pack app-section" aria-labelledby="reviewPackTitle">
       <div class="section-head">
         <div>
-          <h2 id="reviewPackTitle">Review Pack</h2>
-          <p>
-            Offline-generated security testing, unit testing, ISG checklist, and
-            dummy test data from the current findings.
-          </p>
+          <h2 id="reviewPackTitle">Pack</h2>
+          <p>Tests, gates, APIs, logs, and mails.</p>
         </div>
         <button type="button" class="collapse-btn" data-collapse-target="reviewPackBody" data-start-collapsed="true">Hide</button>
         <button id="downloadPackBtn" type="button" class="ghost-btn" disabled>
@@ -424,11 +419,8 @@
     <section class="workbench app-section" aria-labelledby="workbenchTitle">
       <div class="section-head">
         <div>
-          <h2 id="workbenchTitle">Integration Lead Workbench</h2>
-          <p>
-            Offline workspace for FS review, tracker updates, CR readiness,
-            signoffs, POCs, and communication drafts.
-          </p>
+          <h2 id="workbenchTitle">Work</h2>
+          <p>Tracker, CR, POCs, and mails.</p>
         </div>
         <div class="result-actions">
           <button id="generateWorkbenchBtn" type="button" class="primary-btn">
@@ -521,8 +513,8 @@
     <section class="safety-center app-section" aria-labelledby="safetyTitle">
       <div class="section-head">
         <div>
-          <h2 id="safetyTitle">Safety and Issue Register</h2>
-          <p>Redact sensitive text and create a formal issue register from review findings.</p>
+          <h2 id="safetyTitle">Issues</h2>
+          <p>Redact and track fixes.</p>
         </div>
         <div class="result-actions">
           <button id="redactBtn" type="button" class="primary-btn">Redact Text</button>
@@ -555,8 +547,8 @@
     <section class="report-center app-section" aria-labelledby="reportTitle">
       <div class="section-head no-print">
         <div>
-          <h2 id="reportTitle">Printable Report</h2>
-          <p>Generate a clean report and use browser Print to save as PDF.</p>
+          <h2 id="reportTitle">Report</h2>
+          <p>Preview and save PDF.</p>
         </div>
         <div class="result-actions">
           <button id="generateReportBtn" type="button" class="primary-btn">Generate Report</button>
@@ -575,11 +567,8 @@
     <section class="signoff-center app-section" aria-labelledby="signoffCenterTitle">
       <div class="section-head">
         <div>
-          <h2 id="signoffCenterTitle">EA and ISG Signoff Center</h2>
-          <p>
-            Generate EA review templates and run ISG pre-assessment before
-            sending for formal approval.
-          </p>
+          <h2 id="signoffCenterTitle">EA / ISG</h2>
+          <p>Architecture and security readiness.</p>
         </div>
         <div class="result-actions">
           <button id="generateSignoffBtn" type="button" class="primary-btn">
@@ -647,7 +636,7 @@
         <label class="wide-field">
           EA Sample Template / Document
           <input id="eaDocInput" type="file" accept=".txt,.md,.docx,.pptx" />
-          <small id="eaDocSummary">Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.</small>
+          <small id="eaDocSummary">Optional sanitized TXT, DOCX, or PPTX.</small>
         </label>
         <label class="wide-field">
           Requested EA Document Changes
@@ -714,11 +703,8 @@
     <section class="lld-center app-section" aria-labelledby="lldCenterTitle">
       <div class="section-head">
         <div>
-          <h2 id="lldCenterTitle">LLD and Evidence Validation</h2>
-          <p>
-            Compare explained flow, LLD notes, code, configs, and developer
-            claims against review evidence.
-          </p>
+          <h2 id="lldCenterTitle">LLD Check</h2>
+          <p>Compare design, code, and claims.</p>
         </div>
         <div class="result-actions">
           <button id="generateLldBtn" type="button" class="primary-btn">
@@ -788,7 +774,7 @@
     </section>
 
     <section class="local-note" aria-label="Privacy model">
-      <h2 id="privacyModelTitle">Privacy Model</h2>
+      <h2 id="privacyModelTitle">Privacy</h2>
       <p>
         This is a static offline tool. It has no backend, no tracking script, no
         external dependencies, and no network upload path. For formal vendor

@@ -2621,7 +2621,7 @@ function applySessionData(session) {
   state.eaDocument = session.eaDocument || null;
   elements.eaDocSummary.textContent = state.eaDocument
     ? `${state.eaDocument.name} loaded from saved session.`
-    : "Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.";
+    : "Optional sanitized TXT, DOCX, or PPTX.";
 
   Object.entries(session.forms).forEach(([key, value]) => {
     if (elements[key]) elements[key].value = value;
@@ -2925,7 +2925,7 @@ function clearAll() {
   elements.logInput.value = "";
   elements.reviewMode.value = "full";
   elements.eaDocChangeRequest.value = "";
-  elements.eaDocSummary.textContent = "Optional. Upload a sanitized EA PPTX/DOCX/text sample to compare format and request changes locally.";
+  elements.eaDocSummary.textContent = "Optional sanitized TXT, DOCX, or PPTX.";
   elements.downloadBtn.disabled = true;
   elements.downloadPackBtn.disabled = true;
   renderSummary(0);
